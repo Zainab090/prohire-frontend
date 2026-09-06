@@ -1,4 +1,4 @@
-```tsx
+
 "use client";
 
 import { useEffect, useMemo, useState, type ElementType } from "react";
@@ -998,4 +998,3 @@ function DashboardSkeleton() {
     </div>
   );
 }
-```
