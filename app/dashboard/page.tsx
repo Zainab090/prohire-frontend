@@ -12,38 +12,17 @@ import {
   Mic,
   TrendingUp,
   ArrowRight,
-  Zap,
   CheckCircle,
-  Sparkles,
   Briefcase,
-  Star,
-  Shield,
   BarChart3,
-  Clock,
   Compass,
   Rocket,
-  Award,
-  Brain,
-  Eye,
-  Activity,
-  Calendar,
   ChevronRight,
   Plus,
   Filter,
-  Download,
-  Share2,
-  Globe,
-  Users as UsersIcon,
-  MessageSquare,
-  FileText,
-  PieChart,
-  LineChart,
   AlertCircle,
-  Bell,
-  Settings,
-  LogOut,
-  Home,
-  Search,
+  Sparkles,
+  Zap,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
@@ -54,7 +33,7 @@ interface ProfileSummary {
 }
 
 export default function DashboardPage() {
-  const { status } = useSession();
+  const { status, data: session } = useSession();
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,6 +53,7 @@ export default function DashboardPage() {
       });
   }, []);
 
+  // Mouse parallax
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (containerRef.current) {
@@ -88,9 +68,61 @@ export default function DashboardPage() {
   }, []);
 
   const hasProfile = !!profile?.fullName;
-  const userName = profile?.fullName?.split(" ")[0] || "";
+  const userName = profile?.fullName?.split(" ")[0] || session?.user?.name?.split(" ")[0] || "";
 
-  // Recent activity data
+  // Stats Data
+  const stats = [
+    { label: "Match Score", value: "94%", icon: Target, change: "+12%", color: "from-blue-400 to-teal-400" },
+    { label: "Interviews", value: "12", icon: Mic, change: "+3 this week", color: "from-purple-400 to-pink-400" },
+    { label: "Skill Progress", value: "78%", icon: BarChart3, change: "+5%", color: "from-amber-400 to-orange-400" },
+    { label: "Applications", value: "8", icon: Briefcase, change: "2 pending", color: "from-rose-400 to-pink-400" },
+  ];
+
+  // Journey Steps
+  const journeySteps = [
+    {
+      icon: User,
+      title: "Profile",
+      desc: "Your verified source of truth — skills, experience, projects, resume.",
+      href: "/profile",
+      cta: hasProfile ? "Edit Profile" : "Set Up Profile",
+      done: hasProfile,
+      disabled: false,
+      color: "from-blue-400 to-teal-400",
+    },
+    {
+      icon: Target,
+      title: "AI Job Matching",
+      desc: "Explainable compatibility scores against Pakistan-relevant roles.",
+      href: "/jobs",
+      cta: "View Matches",
+      done: false,
+      disabled: !hasProfile,
+      color: "from-purple-400 to-pink-400",
+    },
+    {
+      icon: Mic,
+      title: "AI Interview",
+      desc: "Adaptive, role-specific mock interview with live follow-ups.",
+      href: "/interviews",
+      cta: "Start Practice",
+      done: false,
+      disabled: !hasProfile,
+      color: "from-amber-400 to-orange-400",
+    },
+    {
+      icon: TrendingUp,
+      title: "Career Roadmap",
+      desc: "A sequenced skill plan built from your real gaps.",
+      href: "/roadmap",
+      cta: "View Roadmap",
+      done: false,
+      disabled: !hasProfile,
+      color: "from-rose-400 to-pink-400",
+    },
+  ];
+
+  // Recent Activity
   const recentActivity = [
     { time: "2 min ago", event: "AI Interview completed", status: "success", icon: Mic },
     { time: "1 hour ago", event: "New job match: Senior Developer", status: "info", icon: Target },
@@ -98,7 +130,7 @@ export default function DashboardPage() {
     { time: "1 day ago", event: "Career roadmap generated", status: "info", icon: TrendingUp },
   ];
 
-  // Skills data
+  // Skills
   const skills = [
     { name: "React", level: 85 },
     { name: "TypeScript", level: 78 },
@@ -107,7 +139,7 @@ export default function DashboardPage() {
     { name: "AWS", level: 55 },
   ];
 
-  // Recommended jobs
+  // Recommended Jobs
   const recommendedJobs = [
     {
       title: "Senior Software Engineer",
@@ -172,7 +204,7 @@ export default function DashboardPage() {
       <Navbar />
 
       <main className="mx-auto max-w-7xl px-6 pt-28 pb-12 md:px-8">
-        {/* Welcome Header with Stats */}
+        {/* Welcome Header */}
         <div className="animate-in slide-in-from-top-10 fade-in duration-700">
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div>
@@ -262,12 +294,7 @@ export default function DashboardPage() {
         {/* Quick Stats */}
         {hasProfile && (
           <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4 animate-in slide-in-from-bottom-5 fade-in duration-700 delay-300">
-            {[
-              { label: "Match Score", value: "94%", icon: Target, change: "+12%", color: "from-blue-400 to-teal-400" },
-              { label: "Interviews Completed", value: "12", icon: Mic, change: "+3 this week", color: "from-purple-400 to-pink-400" },
-              { label: "Skill Progress", value: "78%", icon: BarChart3, change: "+5%", color: "from-amber-400 to-orange-400" },
-              { label: "Applications", value: "8", icon: Briefcase, change: "2 pending", color: "from-rose-400 to-pink-400" },
-            ].map((stat, idx) => (
+            {stats.map((stat, idx) => (
               <div
                 key={idx}
                 className="group relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/10 hover:bg-white/10 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/5"
@@ -304,47 +331,7 @@ export default function DashboardPage() {
             </div>
             
             <div className="grid gap-4 sm:grid-cols-2">
-              {[
-                {
-                  icon: User,
-                  title: "Profile",
-                  desc: "Your verified source of truth",
-                  href: "/profile",
-                  cta: hasProfile ? "Edit Profile" : "Set Up",
-                  done: hasProfile,
-                  color: "from-blue-400 to-teal-400",
-                },
-                {
-                  icon: Target,
-                  title: "Job Matching",
-                  desc: "AI-powered compatibility scores",
-                  href: "/jobs",
-                  cta: "View Matches",
-                  done: false,
-                  disabled: !hasProfile,
-                  color: "from-purple-400 to-pink-400",
-                },
-                {
-                  icon: Mic,
-                  title: "AI Interview",
-                  desc: "Adaptive mock interviews",
-                  href: "/interviews",
-                  cta: "Start Practice",
-                  done: false,
-                  disabled: !hasProfile,
-                  color: "from-amber-400 to-orange-400",
-                },
-                {
-                  icon: TrendingUp,
-                  title: "Career Roadmap",
-                  desc: "Personalized skill plan",
-                  href: "/roadmap",
-                  cta: "View Roadmap",
-                  done: false,
-                  disabled: !hasProfile,
-                  color: "from-rose-400 to-pink-400",
-                },
-              ].map((step, idx) => (
+              {journeySteps.map((step, idx) => (
                 <div
                   key={idx}
                   className={`group rounded-2xl border border-white/5 bg-white/5 p-5 backdrop-blur-sm transition-all hover:border-white/10 hover:bg-white/10 hover:-translate-y-1 ${step.disabled ? "opacity-60" : ""}`}
