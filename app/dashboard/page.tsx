@@ -1,6 +1,13 @@
+
 "use client";
 
-import { useEffect, useMemo, useState, type ElementType } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ElementType,
+  type ReactNode,
+} from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -11,7 +18,6 @@ import {
   ChevronDown,
   ChevronRight,
   CircleCheck,
-  Compass,
   LayoutDashboard,
   Menu,
   Mic,
@@ -22,18 +28,9 @@ import {
   Target,
   TrendingUp,
   User,
-  Users,
   X,
   Zap,
-  AlertCircle,
-  BarChart3,
-  Clock,
-  Calendar,
-  Filter,
-  Plus,
   Rocket,
-  Star,
-  Shield,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
@@ -47,7 +44,6 @@ type AgentStatus = "done" | "ready" | "idle";
 
 interface Agent {
   name: string;
-  shortName: string;
   description: string;
   icon: ElementType;
   status: AgentStatus;
@@ -57,7 +53,6 @@ interface Agent {
 const AGENTS: Agent[] = [
   {
     name: "Profile Agent",
-    shortName: "Profile",
     description: "Your source of truth",
     icon: User,
     status: "done",
@@ -65,7 +60,6 @@ const AGENTS: Agent[] = [
   },
   {
     name: "Job Discovery Agent",
-    shortName: "Job Discovery",
     description: "Find your best opportunities",
     icon: Target,
     status: "ready",
@@ -73,7 +67,6 @@ const AGENTS: Agent[] = [
   },
   {
     name: "Application Agent",
-    shortName: "Applications",
     description: "Optimize every application",
     icon: BriefcaseBusiness,
     status: "ready",
@@ -81,7 +74,6 @@ const AGENTS: Agent[] = [
   },
   {
     name: "Interview Agent",
-    shortName: "Interview",
     description: "Prepare with adaptive AI",
     icon: Mic,
     status: "ready",
@@ -89,7 +81,6 @@ const AGENTS: Agent[] = [
   },
   {
     name: "Career Intelligence",
-    shortName: "Career AI",
     description: "Turn gaps into a roadmap",
     icon: TrendingUp,
     status: "ready",
@@ -151,6 +142,7 @@ export default function DashboardPage() {
 
   const firstName = useMemo(() => {
     if (!profile?.fullName) return "there";
+
     return profile.fullName.trim().split(/\s+/)[0];
   }, [profile?.fullName]);
 
@@ -166,56 +158,6 @@ export default function DashboardPage() {
       .toUpperCase();
   }, [profile?.fullName]);
 
-  // Stats Data
-  const stats = [
-    { label: "Match Score", value: "94%", icon: Target, change: "+12%", color: "from-blue-400 to-teal-400" },
-    { label: "Interviews", value: "12", icon: Mic, change: "+3 this week", color: "from-purple-400 to-pink-400" },
-    { label: "Skill Progress", value: "78%", icon: BarChart3, change: "+5%", color: "from-amber-400 to-orange-400" },
-    { label: "Applications", value: "8", icon: BriefcaseBusiness, change: "2 pending", color: "from-rose-400 to-pink-400" },
-  ];
-
-  // Recent Activity
-  const recentActivity = [
-    { time: "2 min ago", event: "AI Interview completed", status: "success", icon: Mic },
-    { time: "1 hour ago", event: "New job match: Senior Developer", status: "info", icon: Target },
-    { time: "3 hours ago", event: "Profile updated", status: "success", icon: User },
-    { time: "1 day ago", event: "Career roadmap generated", status: "info", icon: TrendingUp },
-  ];
-
-  // Skills
-  const skills = [
-    { name: "React", level: 85 },
-    { name: "TypeScript", level: 78 },
-    { name: "Node.js", level: 72 },
-    { name: "Python", level: 65 },
-    { name: "AWS", level: 55 },
-  ];
-
-  // Recommended Jobs
-  const recommendedJobs = [
-    {
-      title: "Senior Software Engineer",
-      company: "TechCorp Pakistan",
-      match: 94,
-      location: "Lahore",
-      type: "Full-time",
-    },
-    {
-      title: "Full Stack Developer",
-      company: "Innovation Labs",
-      match: 87,
-      location: "Islamabad",
-      type: "Remote",
-    },
-    {
-      title: "AI/ML Engineer",
-      company: "DataScience Inc",
-      match: 82,
-      location: "Karachi",
-      type: "Hybrid",
-    },
-  ];
-
   if (status === "loading" || (loading && !profile)) {
     return <DashboardSkeleton />;
   }
@@ -229,29 +171,35 @@ export default function DashboardPage() {
       </div>
 
       <div className="relative flex min-h-screen">
-        {/* Desktop Sidebar */}
+        {/* Desktop sidebar */}
         <aside className="hidden w-[248px] shrink-0 border-r border-black/[0.055] bg-white/75 backdrop-blur-2xl lg:flex lg:flex-col">
           <Sidebar initials={initials} />
         </aside>
 
-        {/* Mobile Navigation */}
+        {/* Mobile navigation */}
         {mobileNavOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <button
+              type="button"
               aria-label="Close navigation"
               className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm"
               onClick={() => setMobileNavOpen(false)}
             />
+
             <aside className="relative flex h-full w-[285px] flex-col border-r border-black/[0.06] bg-white shadow-2xl">
               <div className="flex items-center justify-between px-6 py-5">
                 <Logo />
+
                 <button
+                  type="button"
                   onClick={() => setMobileNavOpen(false)}
+                  aria-label="Close menu"
                   className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
                 >
                   <X size={19} />
                 </button>
               </div>
+
               <SidebarContent initials={initials} />
             </aside>
           </div>
@@ -263,14 +211,14 @@ export default function DashboardPage() {
           <header className="sticky top-0 z-30 h-[72px] border-b border-black/[0.045] bg-white/75 backdrop-blur-2xl">
             <div className="flex h-full items-center gap-3 px-4 sm:px-6 lg:px-8">
               <button
+                type="button"
                 onClick={() => setMobileNavOpen(true)}
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
                 aria-label="Open navigation"
+                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
               >
                 <Menu size={21} />
               </button>
 
-              {/* Mobile logo */}
               <div className="lg:hidden">
                 <Logo />
               </div>
@@ -281,12 +229,15 @@ export default function DashboardPage() {
                   size={17}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                 />
+
                 <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Search jobs, skills, or ask your AI assistant..."
                   className="h-11 w-full rounded-2xl border border-black/[0.055] bg-slate-50/80 pl-11 pr-20 text-[13px] outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-900/[0.025]"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
+
                 <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-lg border border-black/[0.05] bg-white px-2 py-1 text-[10px] font-medium text-slate-400 shadow-sm sm:block">
                   ⌘ K
                 </kbd>
@@ -294,28 +245,39 @@ export default function DashboardPage() {
 
               <div className="ml-auto flex items-center gap-2">
                 <button
+                  type="button"
                   aria-label="Notifications"
                   className="relative rounded-xl p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
                 >
                   <Bell size={18} />
+
                   <span className="absolute right-2.5 top-2 h-1.5 w-1.5 rounded-full bg-rose-500 ring-2 ring-white" />
                 </button>
 
                 <div className="mx-1 hidden h-7 w-px bg-black/[0.06] sm:block" />
 
-                <button className="flex items-center gap-2 rounded-xl p-1.5 pr-2 transition hover:bg-slate-100">
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-xl p-1.5 pr-2 transition hover:bg-slate-100"
+                >
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-950 text-[11px] font-semibold text-white shadow-sm">
                     {initials}
                   </div>
+
                   <div className="hidden text-left sm:block">
                     <p className="max-w-[130px] truncate text-xs font-semibold text-slate-900">
                       {profile?.fullName || "ProHire User"}
                     </p>
+
                     <p className="max-w-[130px] truncate text-[10px] text-slate-400">
                       {profile?.preferredRole || "Career Explorer"}
                     </p>
                   </div>
-                  <ChevronDown size={14} className="hidden text-slate-400 sm:block" />
+
+                  <ChevronDown
+                    size={14}
+                    className="hidden text-slate-400 sm:block"
+                  />
                 </button>
               </div>
             </div>
@@ -324,14 +286,15 @@ export default function DashboardPage() {
           <main className="mx-auto max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-10 xl:px-12">
             {/* Hero */}
             <section className="relative overflow-hidden rounded-[28px] border border-black/[0.045] bg-white shadow-[0_16px_60px_rgba(15,23,42,0.045)]">
-              {/* Decorative glow */}
               <div className="pointer-events-none absolute -right-24 -top-32 h-[420px] w-[620px] rounded-full bg-gradient-to-br from-cyan-200/35 via-blue-100/25 to-transparent blur-3xl" />
+
               <div className="pointer-events-none absolute bottom-[-150px] right-[15%] h-[260px] w-[500px] rounded-full bg-emerald-200/15 blur-3xl" />
 
-              {/* Abstract path */}
               <div className="pointer-events-none absolute right-[-30px] top-0 hidden h-full w-[48%] overflow-hidden lg:block">
                 <div className="absolute right-[8%] top-[18%] h-[260px] w-[260px] rounded-full bg-blue-100/40 blur-3xl" />
+
                 <div className="absolute right-[18%] top-[34%] h-[180px] w-[380px] -rotate-12 rounded-[100%] border-[22px] border-cyan-100/30 blur-[1px]" />
+
                 <div className="absolute right-[2%] top-[53%] h-[150px] w-[420px] rotate-[-8deg] rounded-[100%] border-[18px] border-emerald-100/25" />
               </div>
 
@@ -356,23 +319,20 @@ export default function DashboardPage() {
                   </p>
 
                   <div className="mt-7 flex flex-wrap items-center gap-3">
-                    {hasProfile ? (
-                      <Link
-                        href="/jobs"
-                        className="group inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-5 text-[13px] font-semibold text-white shadow-lg shadow-slate-900/10 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-800"
-                      >
-                        Explore opportunities
-                        <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    ) : (
-                      <Link
-                        href="/profile"
-                        className="group inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-5 text-[13px] font-semibold text-white shadow-lg shadow-slate-900/10 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-800"
-                      >
-                        Build your profile
-                        <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    )}
+                    <Link
+                      href={hasProfile ? "/jobs" : "/profile"}
+                      className="group inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-5 text-[13px] font-semibold text-white shadow-lg shadow-slate-900/10 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-800"
+                    >
+                      {hasProfile
+                        ? "Explore opportunities"
+                        : "Build your profile"}
+
+                      <ArrowRight
+                        size={15}
+                        className="transition-transform group-hover:translate-x-0.5"
+                      />
+                    </Link>
+
                     <Link
                       href="/roadmap"
                       className="inline-flex h-11 items-center gap-2 rounded-xl border border-black/[0.07] bg-white/80 px-5 text-[13px] font-semibold text-slate-700 transition hover:border-black/10 hover:bg-white"
@@ -386,15 +346,22 @@ export default function DashboardPage() {
                 <div className="relative hidden h-full min-h-[310px] lg:block">
                   <div className="absolute right-[14%] top-[18%] flex h-[170px] w-[170px] items-center justify-center rounded-full border border-white bg-white/70 shadow-[0_20px_60px_rgba(59,130,246,0.12)] backdrop-blur-xl">
                     <div className="flex h-[110px] w-[110px] items-center justify-center rounded-full bg-gradient-to-br from-cyan-50 to-blue-100/80">
-                      <Sparkles size={40} strokeWidth={1.5} className="text-cyan-600" />
+                      <Sparkles
+                        size={40}
+                        strokeWidth={1.5}
+                        className="text-cyan-600"
+                      />
                     </div>
                   </div>
+
                   <div className="absolute bottom-[22%] right-[42%] flex h-12 w-12 items-center justify-center rounded-2xl border border-white bg-white/90 shadow-xl">
                     <Zap size={18} className="text-amber-500" />
                   </div>
+
                   <div className="absolute right-[8%] top-[42%] rounded-2xl border border-white bg-white/85 px-4 py-3 shadow-xl backdrop-blur-xl">
                     <div className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-500" />
+
                       <span className="text-[11px] font-semibold text-slate-700">
                         AI network operational
                       </span>
@@ -412,16 +379,19 @@ export default function DashboardPage() {
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
                       <Sparkles size={18} />
                     </div>
+
                     <div>
                       <p className="text-[13px] font-semibold text-slate-900">
                         Unlock your complete ProHire workspace
                       </p>
+
                       <p className="mt-0.5 text-xs leading-5 text-slate-500">
                         Complete your profile so our agents can personalize
                         jobs, interviews and your career roadmap.
                       </p>
                     </div>
                   </div>
+
                   <Link
                     href="/profile"
                     className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-800"
@@ -433,38 +403,11 @@ export default function DashboardPage() {
               </section>
             )}
 
-            {/* Error */}
+            {/* Profile error */}
             {profileError && (
               <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
-                We couldn't load your profile right now. Please refresh and try again.
-              </div>
-            )}
-
-            {/* Quick Stats */}
-            {hasProfile && (
-              <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-                {stats.map((stat, idx) => (
-                  <div
-                    key={idx}
-                    className="group relative overflow-hidden rounded-2xl border border-black/[0.055] bg-white p-5 transition duration-300 hover:-translate-y-1 hover:shadow-[0_14px_35px_rgba(15,23,42,0.07)]"
-                  >
-                    <div className="absolute -right-10 -top-10 h-20 w-20 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 blur-2xl transition-all group-hover:scale-150" />
-                    <div className="relative z-10">
-                      <div className={`inline-flex rounded-xl bg-gradient-to-br ${stat.color} p-2 text-white shadow-lg shadow-blue-500/20`}>
-                        <stat.icon size={16} />
-                      </div>
-                      <div className="mt-3 flex items-end justify-between">
-                        <div>
-                          <div className="text-2xl font-bold text-slate-950">{stat.value}</div>
-                          <div className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-0.5">
-                            {stat.label}
-                          </div>
-                        </div>
-                        <div className="text-xs text-emerald-600 font-medium">{stat.change}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                We couldn't load your profile right now. Please refresh and
+                try again.
               </div>
             )}
 
@@ -510,10 +453,12 @@ export default function DashboardPage() {
                   title="Career Journey"
                   description="Complete each stage to unlock the full power of ProHire."
                 />
+
                 <div className="flex items-center gap-3">
                   <span className="text-[11px] font-medium text-slate-400">
                     {hasProfile ? "1" : "0"} / 4 completed
                   </span>
+
                   <div className="flex gap-1">
                     {[0, 1, 2, 3].map((step) => (
                       <span
@@ -540,6 +485,7 @@ export default function DashboardPage() {
                   done={hasProfile}
                   accent="emerald"
                 />
+
                 <JourneyCard
                   number="02"
                   icon={Target}
@@ -550,6 +496,7 @@ export default function DashboardPage() {
                   disabled={!hasProfile}
                   accent="blue"
                 />
+
                 <JourneyCard
                   number="03"
                   icon={Mic}
@@ -560,6 +507,7 @@ export default function DashboardPage() {
                   disabled={!hasProfile}
                   accent="violet"
                 />
+
                 <JourneyCard
                   number="04"
                   icon={TrendingUp}
@@ -573,33 +521,42 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* Bottom CTA */}
+            {/* CTA */}
             <section className="relative mt-8 overflow-hidden rounded-[24px] bg-slate-950 shadow-2xl shadow-slate-900/10">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(34,211,238,0.18),transparent_35%),radial-gradient(circle_at_90%_100%,rgba(99,102,241,0.18),transparent_40%)]" />
+
               <div className="relative flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/10">
                     <Rocket size={19} className="text-cyan-300" />
                   </div>
+
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300/80">
                       Your next chapter starts here
                     </p>
+
                     <h2 className="mt-1 text-xl font-semibold tracking-[-0.025em] text-white sm:text-2xl">
                       Turn your skills into opportunities.
                     </h2>
+
                     <p className="mt-1.5 max-w-xl text-xs leading-5 text-slate-400">
                       Let AI find the right roles, prepare you for interviews,
                       and build a smarter path toward your future.
                     </p>
                   </div>
                 </div>
+
                 <Link
                   href={hasProfile ? "/jobs" : "/profile"}
                   className="group inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-bold text-slate-950 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-100"
                 >
                   {hasProfile ? "Explore jobs" : "Get started"}
-                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+
+                  <ArrowRight
+                    size={14}
+                    className="transition-transform group-hover:translate-x-0.5"
+                  />
                 </Link>
               </div>
             </section>
@@ -625,6 +582,7 @@ function Sidebar({ initials }: { initials: string }) {
       <div className="px-5 py-5">
         <Logo />
       </div>
+
       <SidebarContent initials={initials} />
     </div>
   );
@@ -635,17 +593,42 @@ function SidebarContent({ initials }: { initials: string }) {
     {
       label: "Workspace",
       items: [
-        { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, active: true },
-        { label: "Profile", href: "/profile", icon: User },
-        { label: "Jobs", href: "/jobs", icon: BriefcaseBusiness },
-        { label: "Interview", href: "/interviews", icon: Mic },
-        { label: "Roadmap", href: "/roadmap", icon: TrendingUp },
+        {
+          label: "Dashboard",
+          href: "/dashboard",
+          icon: LayoutDashboard,
+          active: true,
+        },
+        {
+          label: "Profile",
+          href: "/profile",
+          icon: User,
+        },
+        {
+          label: "Jobs",
+          href: "/jobs",
+          icon: BriefcaseBusiness,
+        },
+        {
+          label: "Interview",
+          href: "/interviews",
+          icon: Mic,
+        },
+        {
+          label: "Roadmap",
+          href: "/roadmap",
+          icon: TrendingUp,
+        },
       ],
     },
     {
       label: "Intelligence",
       items: [
-        { label: "AI Agents", href: "/agents", icon: Sparkles },
+        {
+          label: "AI Agents",
+          href: "/agents",
+          icon: Sparkles,
+        },
       ],
     },
   ];
@@ -658,9 +641,11 @@ function SidebarContent({ initials }: { initials: string }) {
             <p className="mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
               {group.label}
             </p>
+
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
+
                 return (
                   <Link
                     key={item.label}
@@ -680,7 +665,9 @@ function SidebarContent({ initials }: { initials: string }) {
                           : "text-slate-400 transition group-hover:text-slate-700"
                       }
                     />
+
                     {item.label}
+
                     {item.active && (
                       <span className="ml-auto h-1.5 w-1.5 rounded-full bg-slate-950" />
                     )}
@@ -695,13 +682,16 @@ function SidebarContent({ initials }: { initials: string }) {
       <div className="px-4 pb-4">
         <div className="relative overflow-hidden rounded-2xl border border-cyan-100/80 bg-gradient-to-br from-cyan-50 via-white to-blue-50 p-4">
           <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-200/20 blur-2xl" />
+
           <div className="relative">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/[0.04]">
               <Sparkles size={15} className="text-cyan-600" />
             </div>
+
             <p className="mt-3 text-[11px] font-bold text-slate-900">
               Powered by AI.
             </p>
+
             <p className="mt-1 text-[10px] leading-4 text-slate-500">
               Built around your goals, skills and next opportunity.
             </p>
@@ -720,12 +710,17 @@ function SidebarContent({ initials }: { initials: string }) {
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-[10px] font-bold text-white">
             {initials}
           </div>
+
           <div className="min-w-0">
             <p className="truncate text-[11px] font-semibold text-slate-800">
               ProHire Member
             </p>
-            <p className="text-[9px] text-slate-400">Personal workspace</p>
+
+            <p className="text-[9px] text-slate-400">
+              Personal workspace
+            </p>
           </div>
+
           <MoreHorizontal size={15} className="ml-auto text-slate-400" />
         </div>
       </div>
@@ -733,13 +728,19 @@ function SidebarContent({ initials }: { initials: string }) {
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* Logo                                                                       */
+/* -------------------------------------------------------------------------- */
+
 function Logo() {
   return (
     <Link href="/dashboard" className="group flex items-center gap-2.5">
       <div className="relative flex h-8 w-8 items-center justify-center">
         <div className="absolute h-7 w-4 -translate-x-1.5 rotate-[30deg] rounded-[6px] bg-cyan-500/90 transition-transform duration-300 group-hover:-rotate-[15deg]" />
+
         <div className="absolute h-7 w-4 translate-x-1.5 rotate-[30deg] rounded-[6px] bg-blue-500/90 transition-transform duration-300 group-hover:rotate-[45deg]" />
       </div>
+
       <span className="text-[18px] font-bold tracking-[-0.045em] text-slate-950">
         ProHire
       </span>
@@ -754,13 +755,32 @@ function Logo() {
 function AgentCard({ agent }: { agent: Agent }) {
   const Icon = agent.icon;
 
-  const statusMap = {
-    done: { label: "Complete", dot: "bg-emerald-500", text: "text-emerald-600" },
-    ready: { label: "Ready", dot: "bg-blue-500", text: "text-blue-600" },
-    idle: { label: "Waiting", dot: "bg-slate-300", text: "text-slate-400" },
+  const statusMap: Record<
+    AgentStatus,
+    {
+      label: string;
+      dot: string;
+      text: string;
+    }
+  > = {
+    done: {
+      label: "Complete",
+      dot: "bg-emerald-500",
+      text: "text-emerald-600",
+    },
+    ready: {
+      label: "Ready",
+      dot: "bg-blue-500",
+      text: "text-blue-600",
+    },
+    idle: {
+      label: "Waiting",
+      dot: "bg-slate-300",
+      text: "text-slate-400",
+    },
   };
 
-  const status = statusMap[agent.status];
+  const currentStatus = statusMap[agent.status];
 
   return (
     <div
@@ -768,22 +788,35 @@ function AgentCard({ agent }: { agent: Agent }) {
     >
       <div className="relative flex items-start justify-between">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/[0.035]">
-          <Icon size={17} className="text-slate-700" strokeWidth={1.8} />
+          <Icon
+            size={17}
+            className="text-slate-700"
+            strokeWidth={1.8}
+          />
         </div>
+
         <ChevronRight
           size={15}
           className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-500"
         />
       </div>
+
       <p className="mt-3 text-[11px] font-semibold text-slate-900">
         {agent.name}
       </p>
+
       <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">
         {agent.description}
       </p>
-      <div className={`mt-3 flex items-center gap-1.5 text-[9px] font-semibold ${status.text}`}>
-        <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
-        {status.label}
+
+      <div
+        className={`mt-3 flex items-center gap-1.5 text-[9px] font-semibold ${currentStatus.text}`}
+      >
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${currentStatus.dot}`}
+        />
+
+        {currentStatus.label}
       </div>
     </div>
   );
@@ -815,7 +848,179 @@ function JourneyCard({
   accent: "emerald" | "blue" | "violet" | "cyan";
 }) {
   const accentMap = {
-    emerald: { icon: "bg-emerald-50 text-emerald-600", glow: "from-emerald-100/50", line: "bg-emerald-400" },
-    blue: { icon: "bg-blue-50 text-blue-600", glow: "from-blue-100/50", line: "bg-blue-400" },
-    violet: { icon: "bg-violet-50 text-violet-600", glow: "from-violet-100/50", line: "bg-violet-400" },
-    cyan: { icon
+    emerald: {
+      icon: "bg-emerald-50 text-emerald-600",
+      glow: "from-emerald-100/50",
+    },
+    blue: {
+      icon: "bg-blue-50 text-blue-600",
+      glow: "from-blue-100/50",
+    },
+    violet: {
+      icon: "bg-violet-50 text-violet-600",
+      glow: "from-violet-100/50",
+    },
+    cyan: {
+      icon: "bg-cyan-50 text-cyan-600",
+      glow: "from-cyan-100/50",
+    },
+  };
+
+  const colors = accentMap[accent];
+
+  return (
+    <div
+      className={`group relative min-h-[290px] overflow-hidden rounded-[22px] border border-black/[0.055] bg-white p-5 transition duration-300 ${
+        disabled
+          ? "opacity-[0.72]"
+          : "hover:-translate-y-1 hover:border-black/[0.09] hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
+      }`}
+    >
+      <div
+        className={`pointer-events-none absolute -bottom-24 -right-20 h-48 w-64 rounded-full bg-gradient-to-t ${colors.glow} to-transparent blur-2xl transition duration-500 group-hover:scale-125`}
+      />
+
+      <div className="relative flex items-center justify-between">
+        <span className="text-[10px] font-semibold tracking-[0.08em] text-slate-300">
+          {number}
+        </span>
+
+        {done ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-bold text-emerald-600">
+            <CircleCheck size={11} />
+            Complete
+          </span>
+        ) : disabled ? (
+          <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[9px] font-semibold text-slate-400">
+            Locked
+          </span>
+        ) : (
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-semibold text-blue-600">
+            Ready
+          </span>
+        )}
+      </div>
+
+      <div
+        className={`relative mt-6 flex h-12 w-12 items-center justify-center rounded-2xl ${colors.icon} shadow-sm`}
+      >
+        <Icon size={22} strokeWidth={1.8} />
+      </div>
+
+      <div className="relative mt-5">
+        <h3 className="text-[18px] font-semibold tracking-[-0.025em] text-slate-950">
+          {title}
+        </h3>
+
+        <p className="mt-2 max-w-[260px] text-[11px] leading-5 text-slate-500">
+          {description}
+        </p>
+      </div>
+
+      <div className="relative mt-5">
+        {disabled ? (
+          <span className="text-[10px] font-medium text-slate-400">
+            Complete your profile first
+          </span>
+        ) : (
+          <Link
+            href={href}
+            className="group/link inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-800"
+          >
+            <span className="border-b border-slate-300 pb-0.5 transition group-hover/link:border-slate-800">
+              {cta}
+            </span>
+
+            <ArrowRight
+              size={13}
+              className="transition-transform group-hover/link:translate-x-1"
+            />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Section Header                                                             */
+/* -------------------------------------------------------------------------- */
+
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+  right,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  right?: ReactNode;
+}) {
+  return (
+    <div className="flex min-w-0 items-end justify-between gap-4">
+      <div>
+        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
+          {eyebrow}
+        </p>
+
+        <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.035em] text-slate-950">
+          {title}
+        </h2>
+
+        <p className="mt-1 text-[11px] leading-5 text-slate-500">
+          {description}
+        </p>
+      </div>
+
+      {right}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Loading Skeleton                                                           */
+/* -------------------------------------------------------------------------- */
+
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#f7f9fc]">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-[248px] border-r border-black/[0.05] bg-white lg:block" />
+
+        <div className="flex-1">
+          <div className="h-[72px] border-b border-black/[0.05] bg-white" />
+
+          <main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10">
+            <div className="h-[310px] animate-pulse rounded-[28px] bg-white" />
+
+            <div className="mt-9">
+              <div className="h-8 w-56 animate-pulse rounded-lg bg-slate-200/60" />
+
+              <div className="mt-2 h-4 w-80 animate-pulse rounded bg-slate-200/50" />
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                {[1, 2, 3, 4, 5].map((item) => (
+                  <div
+                    key={item}
+                    className="h-[150px] animate-pulse rounded-2xl bg-white"
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {[1, 2, 3, 4].map((item) => (
+                <div
+                  key={item}
+                  className="h-[290px] animate-pulse rounded-[22px] bg-white"
+                />
+              ))}
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
