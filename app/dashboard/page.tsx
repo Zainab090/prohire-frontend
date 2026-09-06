@@ -33,7 +33,7 @@ import {
   Download,
   Share2,
   Globe,
-  Users,
+  Users as UsersIcon,
   MessageSquare,
   FileText,
   PieChart,
@@ -59,7 +59,6 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<ProfileSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [activeTab, setActiveTab] = useState("overview");
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -186,9 +185,11 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-teal-500 border-2 border-[#050505] flex items-center justify-center">
-                    <CheckCircle size={10} className="text-white" />
-                  </div>
+                  {hasProfile && (
+                    <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-teal-500 border-2 border-[#050505] flex items-center justify-center">
+                      <CheckCircle size={10} className="text-white" />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
