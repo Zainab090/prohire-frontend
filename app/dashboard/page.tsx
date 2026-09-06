@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Navbar } from "@/components/Navbar";
 import {
   User,
   Target,
@@ -39,140 +40,16 @@ import {
   Share2,
   Eye,
   Globe,
-  Users,
+  Users as UsersIcon,
   MessageSquare,
   FileText,
   PieChart,
   LineChart,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 
-// Components
-const Navbar = ({ user }: { user?: { name: string; email: string } }) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "border-b border-white/5 bg-[#050505]/95 backdrop-blur-2xl shadow-2xl shadow-blue-500/5"
-          : "bg-transparent"
-      }`}
-    >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 md:px-8">
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="relative h-9 w-9 overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 via-teal-500 to-purple-500 p-[2px] shadow-lg shadow-blue-500/30 transition-all duration-500 group-hover:shadow-blue-500/50 group-hover:scale-105 group-hover:rotate-3">
-            <div className="flex h-full w-full items-center justify-center rounded-2xl bg-[#050505]">
-              <Zap size={18} className="fill-blue-400 text-blue-400 animate-pulse-glow" />
-            </div>
-          </div>
-          <div>
-            <span className="text-xl font-bold tracking-tight">
-              Pro<span className="bg-gradient-to-r from-blue-400 via-teal-400 to-purple-400 bg-clip-text text-transparent">Hire</span>
-            </span>
-            <div className="text-[10px] text-slate-500 font-medium tracking-wider uppercase">Dashboard</div>
-          </div>
-        </Link>
-
-        <div className="hidden items-center gap-6 md:flex">
-          <Link
-            href="/jobs"
-            className="text-sm text-slate-400 transition-colors hover:text-white"
-          >
-            Jobs
-          </Link>
-          <Link
-            href="/roadmap"
-            className="text-sm text-slate-400 transition-colors hover:text-white"
-          >
-            Roadmap
-          </Link>
-          <Link
-            href="/interviews"
-            className="text-sm text-slate-400 transition-colors hover:text-white"
-          >
-            Interviews
-          </Link>
-          <button className="relative rounded-full p-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-white">
-            <Bell size={18} />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-          </button>
-          <Link
-            href="/profile"
-            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 transition-all hover:border-white/20 hover:bg-white/10"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-purple-400 text-sm font-bold text-[#050505]">
-              {user?.name?.charAt(0) || "U"}
-            </div>
-            <span className="text-sm font-medium text-white">{user?.name?.split(" ")[0] || "User"}</span>
-          </Link>
-        </div>
-
-        <button
-          className="md:hidden rounded-lg border border-white/10 bg-white/5 p-2 text-white"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="border-t border-white/5 bg-[#050505]/95 backdrop-blur-2xl p-4 md:hidden animate-in slide-in-from-top-5 fade-in duration-300">
-          <div className="space-y-3">
-            <Link
-              href="/jobs"
-              className="flex items-center gap-3 rounded-lg p-3 text-sm text-slate-300 hover:bg-white/5"
-            >
-              <Briefcase size={16} />
-              Jobs
-            </Link>
-            <Link
-              href="/roadmap"
-              className="flex items-center gap-3 rounded-lg p-3 text-sm text-slate-300 hover:bg-white/5"
-            >
-              <Compass size={16} />
-              Roadmap
-            </Link>
-            <Link
-              href="/interviews"
-              className="flex items-center gap-3 rounded-lg p-3 text-sm text-slate-300 hover:bg-white/5"
-            >
-              <Mic size={16} />
-              Interviews
-            </Link>
-            <Link
-              href="/profile"
-              className="flex items-center gap-3 rounded-lg p-3 text-sm text-slate-300 hover:bg-white/5"
-            >
-              <User size={16} />
-              Profile
-            </Link>
-            <div className="border-t border-white/5 pt-3">
-              <div className="flex items-center gap-3 rounded-lg p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-purple-400 text-sm font-bold text-[#050505]">
-                  {user?.name?.charAt(0) || "U"}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">{user?.name || "User"}</div>
-                  <div className="text-xs text-slate-500">{user?.email || "user@example.com"}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </nav>
-  );
-};
-
+// Agent Status Pill Component
 const AgentStatusPill = ({
   label,
   status,
@@ -200,6 +77,62 @@ const AgentStatusPill = ({
     >
       <span className={`h-1.5 w-1.5 rounded-full ${statusDots[status]}`} />
       {label}
+    </div>
+  );
+};
+
+// Journey Card Component
+const JourneyCard = ({
+  icon: Icon,
+  title,
+  desc,
+  href,
+  cta,
+  done,
+  disabled,
+  color,
+}: {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  href: string;
+  cta: string;
+  done?: boolean;
+  disabled?: boolean;
+  color: string;
+}) => {
+  return (
+    <div
+      className={`group rounded-2xl border border-white/5 bg-white/5 p-5 backdrop-blur-sm transition-all hover:border-white/10 hover:bg-white/10 hover:-translate-y-1 ${
+        disabled ? "opacity-60" : ""
+      }`}
+    >
+      <div className="flex items-start justify-between">
+        <div
+          className={`inline-flex rounded-xl bg-gradient-to-br ${color} p-2.5 text-[#050505] shadow-lg shadow-blue-500/20 transition-all group-hover:scale-110 group-hover:rotate-3`}
+        >
+          <Icon size={18} />
+        </div>
+        {done && (
+          <span className="flex items-center gap-1 rounded-full bg-teal-500/10 px-2 py-0.5 text-xs text-teal-400 border border-teal-500/20">
+            <CheckCircle size={10} />
+            Complete
+          </span>
+        )}
+      </div>
+      <h3 className="mt-3 font-semibold text-white">{title}</h3>
+      <p className="mt-1 text-sm text-slate-400">{desc}</p>
+      {disabled ? (
+        <span className="mt-4 inline-block text-xs text-slate-500">Complete your profile first</span>
+      ) : (
+        <Link
+          href={href}
+          className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-400 transition-all group-hover:gap-2"
+        >
+          {cta}
+          <ArrowRight size={14} />
+        </Link>
+      )}
     </div>
   );
 };
@@ -249,7 +182,7 @@ export default function DashboardPage() {
   }, []);
 
   const hasProfile = !!profile?.fullName;
-  const userName = profile?.fullName?.split(" ")[0] || "User";
+  const userName = profile?.fullName?.split(" ")[0] || session?.user?.name?.split(" ")[0] || "User";
 
   // Stats Data
   const stats = [
@@ -268,6 +201,7 @@ export default function DashboardPage() {
       href: "/profile",
       cta: hasProfile ? "Edit Profile" : "Set Up Profile",
       done: hasProfile,
+      disabled: false,
       color: "from-blue-400 to-teal-400",
     },
     {
@@ -276,6 +210,7 @@ export default function DashboardPage() {
       desc: "Explainable compatibility scores against Pakistan-relevant roles.",
       href: "/jobs",
       cta: "View Matches",
+      done: false,
       disabled: !hasProfile,
       color: "from-purple-400 to-pink-400",
     },
@@ -284,7 +219,8 @@ export default function DashboardPage() {
       title: "AI Interview",
       desc: "Adaptive, role-specific mock interview with live follow-ups.",
       href: "/interviews",
-      cta: "Start from a Match",
+      cta: "Start Practice",
+      done: false,
       disabled: !hasProfile,
       color: "from-amber-400 to-orange-400",
     },
@@ -294,6 +230,7 @@ export default function DashboardPage() {
       desc: "A sequenced skill plan built from your real gaps.",
       href: "/roadmap",
       cta: "View Roadmap",
+      done: false,
       disabled: !hasProfile,
       color: "from-rose-400 to-pink-400",
     },
@@ -328,7 +265,8 @@ export default function DashboardPage() {
         <div className="absolute top-0 left-0 h-full w-full bg-[url('/grid.svg')] opacity-[0.015]" />
       </div>
 
-      <Navbar user={session?.user} />
+      {/* Use existing Navbar component */}
+      <Navbar />
 
       <main className="mx-auto max-w-7xl px-6 pt-28 pb-12 md:px-8">
         {/* Welcome Section */}
@@ -337,7 +275,10 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-                  Welcome back, <span className="bg-gradient-to-r from-blue-400 via-teal-400 to-purple-400 bg-clip-text text-transparent">{userName}</span>
+                  Welcome back,{" "}
+                  <span className="bg-gradient-to-r from-blue-400 via-teal-400 to-purple-400 bg-clip-text text-transparent">
+                    {userName}
+                  </span>
                 </h1>
                 <div className="hidden md:flex">
                   {hasProfile && (
@@ -381,8 +322,11 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-slate-300">
-                  Your profile isn&apos;t set up yet — every agent depends on it. 
-                  <Link href="/profile" className="ml-2 font-semibold text-blue-400 hover:text-blue-300 transition-colors">
+                  Your profile isn&apos;t set up yet — every agent depends on it.
+                  <Link
+                    href="/profile"
+                    className="ml-2 font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                  >
                     Build your profile →
                   </Link>
                 </p>
@@ -400,11 +344,15 @@ export default function DashboardPage() {
             >
               <div className="absolute -right-10 -top-10 h-20 w-20 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 blur-2xl transition-all group-hover:scale-150" />
               <div className="relative z-10">
-                <div className={`inline-flex rounded-xl bg-gradient-to-br ${stat.color} p-2 text-[#050505] shadow-lg shadow-blue-500/20`}>
+                <div
+                  className={`inline-flex rounded-xl bg-gradient-to-br ${stat.color} p-2 text-[#050505] shadow-lg shadow-blue-500/20`}
+                >
                   <stat.icon size={16} />
                 </div>
                 <div className="mt-3 text-2xl font-bold text-white">{stat.value}</div>
-                <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">{stat.label}</div>
+                <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                  {stat.label}
+                </div>
               </div>
             </div>
           ))}
@@ -422,37 +370,7 @@ export default function DashboardPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               {journeySteps.map((step, idx) => (
-                <div
-                  key={idx}
-                  className={`group rounded-2xl border border-white/5 bg-white/5 p-5 backdrop-blur-sm transition-all hover:border-white/10 hover:bg-white/10 hover:-translate-y-1 ${
-                    step.disabled ? "opacity-60" : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className={`inline-flex rounded-xl bg-gradient-to-br ${step.color} p-2.5 text-[#050505] shadow-lg shadow-blue-500/20 transition-all group-hover:scale-110 group-hover:rotate-3`}>
-                      <step.icon size={18} />
-                    </div>
-                    {step.done && (
-                      <span className="flex items-center gap-1 rounded-full bg-teal-500/10 px-2 py-0.5 text-xs text-teal-400 border border-teal-500/20">
-                        <CheckCircle size={10} />
-                        Complete
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="mt-3 font-semibold text-white">{step.title}</h3>
-                  <p className="mt-1 text-sm text-slate-400">{step.desc}</p>
-                  {step.disabled ? (
-                    <span className="mt-4 inline-block text-xs text-slate-500">Complete your profile first</span>
-                  ) : (
-                    <Link
-                      href={step.href}
-                      className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-400 transition-all group-hover:gap-2"
-                    >
-                      {step.cta}
-                      <ArrowRight size={14} />
-                    </Link>
-                  )}
-                </div>
+                <JourneyCard key={idx} {...step} />
               ))}
             </div>
           </div>
@@ -525,15 +443,90 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Global CSS for animations */}
+      <style jsx global>{`
+        @keyframes float-particle {
+          0%, 100% {
+            transform: translateY(0px) translateX(0px);
+            opacity: 0.3;
+          }
+          25% {
+            transform: translateY(-20px) translateX(10px);
+            opacity: 0.6;
+          }
+          50% {
+            transform: translateY(-10px) translateX(-10px);
+            opacity: 0.8;
+          }
+          75% {
+            transform: translateY(-30px) translateX(5px);
+            opacity: 0.5;
+          }
+        }
+
+        .animate-in {
+          animation-fill-mode: both;
+        }
+
+        .slide-in-from-top-10 {
+          animation-name: slide-in-from-top;
+          animation-duration: 0.7s;
+        }
+
+        .slide-in-from-bottom-5 {
+          animation-name: slide-in-from-bottom;
+          animation-duration: 0.5s;
+        }
+
+        @keyframes slide-in-from-top {
+          from {
+            transform: translateY(-20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slide-in-from-bottom {
+          from {
+            transform: translateY(20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        .fade-in {
+          animation-name: fade-in;
+          animation-duration: 0.5s;
+        }
+
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .delay-200 {
+          animation-delay: 200ms;
+        }
+
+        .delay-300 {
+          animation-delay: 300ms;
+        }
+
+        .delay-500 {
+          animation-delay: 500ms;
+        }
+      `}</style>
     </div>
   );
 }
-
-// Alert Circle Icon
-const AlertCircle = (props: any) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="8" x2="12" y2="12" />
-    <line x1="12" y1="16" x2="12.01" y2="16" />
-  </svg>
-);
