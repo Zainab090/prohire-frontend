@@ -4,15 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
 import { Navbar } from "@/components/Navbar";
+import { apiFetch } from "@/lib/api";
 
 import {
-  Upload,
-  Plus,
-  X,
-  Sparkles,
-  User,
+  UserRound,
   GraduationCap,
   BriefcaseBusiness,
   MapPin,
@@ -21,20 +17,24 @@ import {
   Github,
   Linkedin,
   Globe,
-  FileText,
-  BrainCircuit,
-  CheckCircle2,
-  ShieldCheck,
+  Upload,
+  Sparkles,
+  Plus,
+  X,
   ArrowRight,
+  Check,
+  CheckCircle2,
+  BrainCircuit,
   Target,
-  Layers3,
-  ChevronRight,
-  Lightbulb,
+  FileText,
   ScanSearch,
-  WandSparkles,
+  Lightbulb,
+  Trash2,
+  Link2,
+  Layers3,
+  ShieldCheck,
+  ChevronRight,
 } from "lucide-react";
-
-import { apiFetch } from "@/lib/api";
 
 interface ProfileFormState {
   fullName: string;
@@ -80,24 +80,38 @@ export default function ProfilePage() {
   const { status } = useSession();
   const router = useRouter();
 
-  const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
+  const [form, setForm] =
+    useState<ProfileFormState>(EMPTY_FORM);
+
   const [skillInput, setSkillInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [resumeUploading, setResumeUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [resumeAnalysis, setResumeAnalysis] = useState<{
-    suggestions: string[];
-    missingKeywords: string[];
-  } | null>(null);
+  const [resumeUploading, setResumeUploading] =
+    useState(false);
+
+  const [resumeAnalysis, setResumeAnalysis] =
+    useState<{
+      suggestions: string[];
+      missingKeywords: string[];
+    } | null>(null);
 
   const [error, setError] = useState("");
+
+  /* =========================================================
+     AUTH
+  ========================================================= */
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     }
   }, [status, router]);
+
+  /* =========================================================
+     LOAD PROFILE
+  ========================================================= */
 
   useEffect(() => {
     apiFetch("/api/profile")
@@ -108,62 +122,85 @@ export default function ProfilePage() {
             fullName: data.profile.fullName || "",
             university: data.profile.university || "",
             skills: data.profile.skills || [],
-            preferredRole: data.profile.preferredRole || "",
-            preferredLocation: data.profile.preferredLocation || "",
-            remotePref: data.profile.remotePref || "no_preference",
+            preferredRole:
+              data.profile.preferredRole || "",
+            preferredLocation:
+              data.profile.preferredLocation || "",
+            remotePref:
+              data.profile.remotePref ||
+              "no_preference",
             expectedSalaryPKR:
-              data.profile.expectedSalaryPKR?.toString() || "",
-            availability: data.profile.availability || "",
-            githubUrl: data.profile.githubUrl || "",
-            linkedinUrl: data.profile.linkedinUrl || "",
-            portfolioUrl: data.profile.portfolioUrl || "",
-            experience: data.profile.experience || [],
-            projects: data.profile.projects || [],
+              data.profile.expectedSalaryPKR?.toString() ||
+              "",
+            availability:
+              data.profile.availability || "",
+            githubUrl:
+              data.profile.githubUrl || "",
+            linkedinUrl:
+              data.profile.linkedinUrl || "",
+            portfolioUrl:
+              data.profile.portfolioUrl || "",
+            experience:
+              data.profile.experience || [],
+            projects:
+              data.profile.projects || [],
           });
         }
+
+        setLoading(false);
       })
       .catch(() => {
         setError("Unable to load your profile.");
+        setLoading(false);
       });
   }, []);
 
-  /* ============================================================
-     PROFILE READINESS
-  ============================================================ */
+  /* =========================================================
+     PROFILE COMPLETION
+  ========================================================= */
 
-  const readiness = useMemo(() => {
-    let completed = 0;
-    const total = 8;
+  const completion = useMemo(() => {
+    const checks = [
+      !!form.fullName.trim(),
+      !!form.university.trim(),
+      form.skills.length > 0,
+      !!form.preferredRole.trim(),
+      !!form.preferredLocation.trim(),
+      !!form.availability.trim(),
+      form.experience.length > 0,
+      form.projects.length > 0,
+      !!(
+        form.githubUrl ||
+        form.linkedinUrl ||
+        form.portfolioUrl
+      ),
+    ];
 
-    if (form.fullName.trim()) completed++;
-    if (form.university.trim()) completed++;
-    if (form.skills.length > 0) completed++;
-    if (form.preferredRole.trim()) completed++;
-    if (form.preferredLocation.trim()) completed++;
-    if (form.experience.length > 0) completed++;
-    if (form.projects.length > 0) completed++;
+    const completed = checks.filter(Boolean).length;
 
-    if (
-      form.githubUrl ||
-      form.linkedinUrl ||
-      form.portfolioUrl
-    ) {
-      completed++;
-    }
-
-    return Math.round((completed / total) * 100);
+    return {
+      completed,
+      total: checks.length,
+      percentage: Math.round(
+        (completed / checks.length) * 100
+      ),
+    };
   }, [form]);
 
-  const hasProfile = !!form.fullName.trim();
-
-  /* ============================================================
+  /* =========================================================
      SKILLS
-  ============================================================ */
+  ========================================================= */
 
   function addSkill() {
     const skill = skillInput.trim();
 
-    if (skill && !form.skills.includes(skill)) {
+    if (
+      skill &&
+      !form.skills.some(
+        (existing) =>
+          existing.toLowerCase() === skill.toLowerCase()
+      )
+    ) {
       setForm({
         ...form,
         skills: [...form.skills, skill],
@@ -176,13 +213,15 @@ export default function ProfilePage() {
   function removeSkill(skill: string) {
     setForm({
       ...form,
-      skills: form.skills.filter((s) => s !== skill),
+      skills: form.skills.filter(
+        (item) => item !== skill
+      ),
     });
   }
 
-  /* ============================================================
+  /* =========================================================
      EXPERIENCE
-  ============================================================ */
+  ========================================================= */
 
   function addExperience() {
     setForm({
@@ -198,16 +237,36 @@ export default function ProfilePage() {
     });
   }
 
-  function removeExperience(index: number) {
+  function updateExperience(
+    index: number,
+    field: "title" | "company" | "description",
+    value: string
+  ) {
+    const next = [...form.experience];
+
+    next[index] = {
+      ...next[index],
+      [field]: value,
+    };
+
     setForm({
       ...form,
-      experience: form.experience.filter((_, i) => i !== index),
+      experience: next,
     });
   }
 
-  /* ============================================================
+  function removeExperience(index: number) {
+    setForm({
+      ...form,
+      experience: form.experience.filter(
+        (_, i) => i !== index
+      ),
+    });
+  }
+
+  /* =========================================================
      PROJECTS
-  ============================================================ */
+  ========================================================= */
 
   function addProject() {
     setForm({
@@ -223,23 +282,67 @@ export default function ProfilePage() {
     });
   }
 
-  function removeProject(index: number) {
+  function updateProject(
+    index: number,
+    field: "name" | "description",
+    value: string
+  ) {
+    const next = [...form.projects];
+
+    next[index] = {
+      ...next[index],
+      [field]: value,
+    };
+
     setForm({
       ...form,
-      projects: form.projects.filter((_, i) => i !== index),
+      projects: next,
     });
   }
 
-  /* ============================================================
-     SAVE PROFILE
-  ============================================================ */
+  function updateProjectTechnologies(
+    index: number,
+    value: string
+  ) {
+    const technologies = value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
 
-  async function handleSave(e: React.FormEvent) {
+    const next = [...form.projects];
+
+    next[index] = {
+      ...next[index],
+      technologies,
+    };
+
+    setForm({
+      ...form,
+      projects: next,
+    });
+  }
+
+  function removeProject(index: number) {
+    setForm({
+      ...form,
+      projects: form.projects.filter(
+        (_, i) => i !== index
+      ),
+    });
+  }
+
+  /* =========================================================
+     SAVE PROFILE
+  ========================================================= */
+
+  async function handleSave(
+    e: React.FormEvent
+  ) {
     e.preventDefault();
 
     setSaving(true);
-    setError("");
     setSaved(false);
+    setError("");
 
     try {
       const res = await apiFetch("/api/profile", {
@@ -249,21 +352,22 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({
           ...form,
-          expectedSalaryPKR: form.expectedSalaryPKR
-            ? Number(form.expectedSalaryPKR)
-            : undefined,
+          expectedSalaryPKR:
+            form.expectedSalaryPKR
+              ? Number(form.expectedSalaryPKR)
+              : undefined,
         }),
       });
+
+      const data = await res.json();
 
       setSaving(false);
 
       if (!res.ok) {
-        const data = await res.json();
-
         setError(
-          data.error || "Failed to save profile."
+          data.error ||
+            "Failed to save your profile."
         );
-
         return;
       }
 
@@ -274,13 +378,15 @@ export default function ProfilePage() {
       }, 2500);
     } catch {
       setSaving(false);
-      setError("Something went wrong while saving your profile.");
+      setError(
+        "Something went wrong while saving your profile."
+      );
     }
   }
 
-  /* ============================================================
+  /* =========================================================
      RESUME UPLOAD
-  ============================================================ */
+  ========================================================= */
 
   async function handleResumeUpload(
     e: React.ChangeEvent<HTMLInputElement>
@@ -290,18 +396,21 @@ export default function ProfilePage() {
     if (!file) return;
 
     setResumeUploading(true);
-    setError("");
     setResumeAnalysis(null);
+    setError("");
 
     try {
       const formData = new FormData();
 
       formData.append("resume", file);
 
-      const res = await apiFetch("/api/resume/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const res = await apiFetch(
+        "/api/resume/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const data = await res.json();
 
@@ -309,1040 +418,1194 @@ export default function ProfilePage() {
 
       if (!res.ok) {
         setError(
-          data.error || "Failed to process resume."
+          data.error ||
+            "Failed to process your resume."
         );
-
         return;
       }
 
       setResumeAnalysis({
-        suggestions: data.analysis.suggestions,
-        missingKeywords: data.analysis.missingKeywords,
+        suggestions:
+          data.analysis?.suggestions || [],
+        missingKeywords:
+          data.analysis?.missingKeywords || [],
       });
 
-      setForm({
-        ...form,
-        skills: data.profile.skills,
-      });
+      setForm((current) => ({
+        ...current,
+        skills:
+          data.profile?.skills ||
+          current.skills,
+      }));
     } catch {
       setResumeUploading(false);
-      setError("Unable to analyze your resume.");
+
+      setError(
+        "Unable to analyze your resume right now."
+      );
     }
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#05070a] text-white">
+        <Navbar />
+
+        <div className="mx-auto flex min-h-[70vh] max-w-6xl items-center justify-center px-6">
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <BrainCircuit
+              size={18}
+              className="animate-pulse text-cyan-400"
+            />
+            Loading your career workspace...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#05070a] text-white">
+    <div className="min-h-screen bg-[#05070a] text-white">
       <Navbar />
 
-      {/* ======================================================
-          AMBIENT BACKGROUND
-      ======================================================= */}
+      {/* =====================================================
+          BACKGROUND
+      ====================================================== */}
 
       <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden">
-        <div className="absolute left-[5%] top-[10%] h-[320px] w-[320px] rounded-full bg-cyan-500/[0.05] blur-[120px]" />
 
-        <div className="absolute right-[5%] top-[20%] h-[420px] w-[420px] rounded-full bg-purple-500/[0.045] blur-[140px]" />
+        <div className="absolute left-[-120px] top-[15%] h-[400px] w-[400px] rounded-full bg-cyan-500/[0.035] blur-[130px]" />
 
-        <div className="absolute bottom-[5%] left-[35%] h-[300px] w-[300px] rounded-full bg-blue-500/[0.035] blur-[120px]" />
+        <div className="absolute right-[-120px] top-[40%] h-[500px] w-[500px] rounded-full bg-purple-500/[0.035] blur-[150px]" />
 
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)",
-            backgroundSize: "70px 70px",
-          }}
-        />
+        <div className="absolute bottom-[-150px] left-[35%] h-[400px] w-[400px] rounded-full bg-blue-500/[0.025] blur-[130px]" />
+
       </div>
 
-      <main className="relative z-10 mx-auto max-w-6xl px-5 py-8 sm:px-6 lg:px-8">
+      <main className="relative z-10 mx-auto max-w-7xl px-5 py-7 sm:px-6 lg:px-8">
 
-        {/* ======================================================
-            HEADER
-        ======================================================= */}
+        {/* =====================================================
+            TOP HEADER
+        ====================================================== */}
 
-        <section className="mb-7">
+        <div className="mb-7 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
 
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+          <div>
 
-            <div>
+            <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-400">
 
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/[0.09] bg-white/[0.025] px-3 py-1.5 text-[11px] text-slate-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,.8)]" />
 
-                <Sparkles
-                  size={13}
-                  className="text-cyan-400"
-                />
-
-                <span>AI Career Identity</span>
-
-                <span className="h-1 w-1 rounded-full bg-slate-600" />
-
-                <span className="text-cyan-400">
-                  PROFILE INTELLIGENCE
-                </span>
-
-              </div>
-
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-
-                Your{" "}
-
-                <span className="bg-gradient-to-r from-cyan-400 via-teal-400 to-purple-400 bg-clip-text text-transparent">
-                  Career Identity
-                </span>
-
-              </h1>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                Build the source of truth that powers every ProHire AI
-                agent — from opportunity discovery to interview preparation
-                and long-term career growth.
-              </p>
+              Career Workspace
 
             </div>
 
-            <Link
-              href="/dashboard"
-              className="group inline-flex items-center gap-2 rounded-xl border border-white/[0.09] bg-white/[0.03] px-4 py-2.5 text-sm text-slate-300 transition hover:border-cyan-400/20 hover:bg-white/[0.06]"
-            >
-              Back to Dashboard
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
 
-              <ArrowRight
-                size={14}
-                className="transition-transform group-hover:translate-x-1"
-              />
-            </Link>
+              Build your{" "}
+
+              <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-purple-400 bg-clip-text text-transparent">
+                professional identity
+              </span>
+
+            </h1>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+
+              Give ProHire the context it needs to discover
+              better opportunities, understand your strengths,
+              and build a smarter career path.
+
+            </p>
 
           </div>
 
-        </section>
+          <Link
+            href="/dashboard"
+            className="group inline-flex w-fit items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-2.5 text-xs font-medium text-slate-400 transition hover:border-cyan-400/20 hover:text-white"
+          >
+            Dashboard
 
-        {/* ======================================================
-            PROFILE COMMAND CENTER
-        ======================================================= */}
+            <ArrowRight
+              size={13}
+              className="transition-transform group-hover:translate-x-1"
+            />
 
-        <section className="relative mb-6 overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#0b121a] via-[#080d13] to-[#0c0914] shadow-2xl">
+          </Link>
 
-          <div className="pointer-events-none absolute -right-28 -top-28 h-80 w-80 rounded-full bg-cyan-400/[0.07] blur-[110px]" />
+        </div>
 
-          <div className="pointer-events-none absolute -bottom-32 right-[25%] h-72 w-72 rounded-full bg-purple-500/[0.06] blur-[110px]" />
+        {/* =====================================================
+            WORKSPACE GRID
+        ====================================================== */}
 
-          <div className="relative grid gap-7 p-6 sm:p-8 lg:grid-cols-[1fr_240px]">
+        <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
 
-            <div>
+          {/* ===================================================
+              LEFT SIDEBAR
+          ==================================================== */}
 
-              <div className="flex items-center gap-3">
+          <aside className="space-y-4">
 
-                <div className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/[0.07]">
+            {/* Completion */}
 
-                  <BrainCircuit
-                    size={21}
-                    className="text-cyan-400"
-                  />
+            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.018] p-5">
 
-                  <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-4 ring-[#0b1219]" />
-
-                </div>
+              <div className="flex items-start justify-between">
 
                 <div>
 
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    ProHire Profile Intelligence
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+                    Profile strength
                   </p>
 
-                  <p className="mt-1 text-xs text-emerald-400">
-                    AI context layer {hasProfile ? "active" : "waiting"}
+                  <p className="mt-1 text-xl font-bold">
+                    {completion.percentage}%
                   </p>
 
                 </div>
 
-              </div>
-
-              <h2 className="mt-6 max-w-2xl text-2xl font-bold tracking-tight sm:text-3xl">
-
-                {hasProfile ? (
-                  <>
-                    Your professional identity,
-                    <span className="block bg-gradient-to-r from-cyan-400 via-teal-400 to-purple-400 bg-clip-text text-transparent">
-                      understood by AI.
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    Give your career
-                    <span className="block bg-gradient-to-r from-cyan-400 via-teal-400 to-purple-400 bg-clip-text text-transparent">
-                      an intelligent foundation.
-                    </span>
-                  </>
-                )}
-
-              </h2>
-
-              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-                Everything you add here becomes context for ProHire's
-                career intelligence layer. The richer your profile,
-                the more relevant your AI-powered recommendations become.
-              </p>
-
-              {/* Intelligence pipeline */}
-
-              <div className="mt-6 flex flex-wrap items-center gap-2">
-
-                <ProfileSignal
-                  icon={User}
-                  label="Identity"
-                />
-
-                <SignalArrow />
-
-                <ProfileSignal
-                  icon={Layers3}
-                  label="Skills"
-                />
-
-                <SignalArrow />
-
-                <ProfileSignal
-                  icon={Target}
-                  label="Goals"
-                />
-
-                <SignalArrow />
-
-                <ProfileSignal
-                  icon={BrainCircuit}
-                  label="AI Context"
-                />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-400/[0.06]">
+                  <Target
+                    size={15}
+                    className="text-cyan-400"
+                  />
+                </div>
 
               </div>
 
-            </div>
-
-            {/* ==================================================
-                READINESS RING
-            =================================================== */}
-
-            <div className="rounded-2xl border border-white/[0.08] bg-black/20 p-5 backdrop-blur">
-
-              <div className="flex items-center justify-between">
-
-                <span className="text-xs font-medium text-slate-400">
-                  Profile readiness
-                </span>
-
-                <ShieldCheck
-                  size={16}
-                  className="text-cyan-400"
-                />
-
-              </div>
-
-              <div className="relative mx-auto mt-5 flex h-36 w-36 items-center justify-center">
+              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
 
                 <div
-                  className="absolute inset-0 rounded-full"
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 transition-all duration-500"
                   style={{
-                    background: `conic-gradient(#22d3ee ${readiness}%, rgba(255,255,255,0.06) ${readiness}% 100%)`,
+                    width: `${completion.percentage}%`,
                   }}
                 />
 
-                <div className="absolute inset-[6px] rounded-full bg-[#080d13]" />
+              </div>
 
-                <div className="relative text-center">
+              <p className="mt-3 text-[10px] leading-5 text-slate-600">
 
-                  <div className="text-3xl font-bold">
-                    {readiness}%
+                {completion.percentage >= 80
+                  ? "Strong profile. Your AI agents have rich career context."
+                  : "Complete more sections to improve your AI matching accuracy."}
+
+              </p>
+
+            </div>
+
+            {/* AI Pipeline */}
+
+            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.018] p-5">
+
+              <div className="mb-5 flex items-center gap-2">
+
+                <BrainCircuit
+                  size={15}
+                  className="text-cyan-400"
+                />
+
+                <span className="text-xs font-semibold">
+                  AI Context
+                </span>
+
+              </div>
+
+              <div className="space-y-1">
+
+                <SidebarStep
+                  number="01"
+                  label="Identity"
+                  done={!!form.fullName}
+                />
+
+                <SidebarStep
+                  number="02"
+                  label="Capabilities"
+                  done={form.skills.length > 0}
+                />
+
+                <SidebarStep
+                  number="03"
+                  label="Experience"
+                  done={form.experience.length > 0}
+                />
+
+                <SidebarStep
+                  number="04"
+                  label="Projects"
+                  done={form.projects.length > 0}
+                />
+
+                <SidebarStep
+                  number="05"
+                  label="Career Goals"
+                  done={
+                    !!form.preferredRole &&
+                    !!form.preferredLocation
+                  }
+                />
+
+                <SidebarStep
+                  number="06"
+                  label="Professional Links"
+                  done={
+                    !!(
+                      form.githubUrl ||
+                      form.linkedinUrl ||
+                      form.portfolioUrl
+                    )
+                  }
+
+                />
+
+              </div>
+
+            </div>
+
+            {/* Agent card */}
+
+            <div className="relative overflow-hidden rounded-2xl border border-cyan-400/[0.1] bg-gradient-to-br from-cyan-400/[0.05] to-purple-500/[0.035] p-5">
+
+              <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-400/[0.06] blur-2xl" />
+
+              <Sparkles
+                size={16}
+                className="text-cyan-400"
+              />
+
+              <h3 className="mt-3 text-xs font-semibold">
+                Profile Intelligence
+              </h3>
+
+              <p className="mt-2 text-[10px] leading-5 text-slate-600">
+
+                Your profile becomes the shared context
+                layer for ProHire's specialized AI agents.
+
+              </p>
+
+              <div className="mt-4 flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-400">
+
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+
+                Intelligence layer active
+
+              </div>
+
+            </div>
+
+          </aside>
+
+          {/* ===================================================
+              MAIN WORKSPACE
+          ==================================================== */}
+
+          <form
+            onSubmit={handleSave}
+            className="min-w-0 space-y-5"
+          >
+
+            {/* =================================================
+                RESUME
+            ================================================== */}
+
+            <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.018]">
+
+              <div className="border-b border-white/[0.06] px-5 py-4 sm:px-6">
+
+                <SectionHeading
+                  number="01"
+                  icon={FileText}
+                  title="Resume Intelligence"
+                  description="Let ProHire extract career signals automatically."
+                />
+
+              </div>
+
+              <div className="p-5 sm:p-6">
+
+                <label className="group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.1] bg-black/20 px-5 py-9 text-center transition hover:border-cyan-400/30 hover:bg-cyan-400/[0.015]">
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-cyan-400/15 bg-cyan-400/[0.05]">
+
+                    {resumeUploading ? (
+                      <BrainCircuit
+                        size={20}
+                        className="animate-pulse text-cyan-400"
+                      />
+                    ) : (
+                      <Upload
+                        size={20}
+                        className="text-cyan-400"
+                      />
+                    )}
+
                   </div>
 
-                  <div className="mt-1 text-[9px] font-semibold tracking-[0.2em] text-slate-600">
-                    COMPLETE
+                  <p className="mt-4 text-sm font-semibold">
+
+                    {resumeUploading
+                      ? "AI is analyzing your resume..."
+                      : "Drop your resume into the intelligence layer"}
+
+                  </p>
+
+                  <p className="mt-1 text-[11px] text-slate-600">
+
+                    PDF or DOCX • Skills will be extracted automatically
+
+                  </p>
+
+                  <span className="mt-4 rounded-lg border border-white/[0.08] bg-white/[0.035] px-4 py-2 text-[11px] font-medium text-slate-400 transition group-hover:border-cyan-400/20 group-hover:text-cyan-300">
+
+                    {resumeUploading
+                      ? "Processing..."
+                      : "Choose Resume"}
+
+                  </span>
+
+                  <input
+                    type="file"
+                    accept=".pdf,.docx"
+                    onChange={handleResumeUpload}
+                    className="hidden"
+                  />
+
+                </label>
+
+                {/* Resume result */}
+
+                {resumeAnalysis && (
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+
+                    <div className="rounded-xl border border-emerald-400/10 bg-emerald-400/[0.025] p-4">
+
+                      <div className="flex items-center gap-2">
+
+                        <CheckCircle2
+                          size={15}
+                          className="text-emerald-400"
+                        />
+
+                        <span className="text-xs font-semibold text-emerald-300">
+                          AI Suggestions
+                        </span>
+
+                      </div>
+
+                      <div className="mt-3 space-y-2">
+
+                        {resumeAnalysis.suggestions
+                          .length > 0 ? (
+                          resumeAnalysis.suggestions.map(
+                            (suggestion, index) => (
+                              <div
+                                key={index}
+                                className="flex gap-2 text-[11px] leading-5 text-slate-500"
+                              >
+                                <Check
+                                  size={13}
+                                  className="mt-1 shrink-0 text-emerald-400"
+                                />
+
+                                {suggestion}
+                              </div>
+                            )
+                          )
+                        ) : (
+                          <p className="text-[11px] text-slate-600">
+                            No additional suggestions.
+                          </p>
+                        )}
+
+                      </div>
+
+                    </div>
+
+                    <div className="rounded-xl border border-amber-400/10 bg-amber-400/[0.025] p-4">
+
+                      <div className="flex items-center gap-2">
+
+                        <Lightbulb
+                          size={15}
+                          className="text-amber-300"
+                        />
+
+                        <span className="text-xs font-semibold text-amber-300">
+                          Potential Keywords
+                        </span>
+
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+
+                        {resumeAnalysis.missingKeywords
+                          .length > 0 ? (
+                          resumeAnalysis.missingKeywords.map(
+                            (keyword, index) => (
+                              <span
+                                key={index}
+                                className="rounded-full border border-amber-400/10 bg-amber-400/[0.04] px-2.5 py-1 text-[10px] text-slate-400"
+                              >
+                                {keyword}
+                              </span>
+                            )
+                          )
+                        ) : (
+                          <p className="text-[11px] text-slate-600">
+                            No missing keywords detected.
+                          </p>
+                        )}
+
+                      </div>
+
+                    </div>
+
                   </div>
+                )}
+
+              </div>
+
+            </section>
+
+            {/* =================================================
+                PERSONAL INFO
+            ================================================== */}
+
+            <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.018]">
+
+              <div className="border-b border-white/[0.06] px-5 py-4 sm:px-6">
+
+                <SectionHeading
+                  number="02"
+                  icon={UserRound}
+                  title="Professional Identity"
+                  description="The basic information your career agents use to understand you."
+                />
+
+              </div>
+
+              <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+
+                <Field
+                  icon={UserRound}
+                  label="Full Name"
+                  value={form.fullName}
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      fullName: value,
+                    })
+                  }
+                  placeholder="e.g. Muhammad Ahmed"
+                  required
+                />
+
+                <Field
+                  icon={GraduationCap}
+                  label="University"
+                  value={form.university}
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      university: value,
+                    })
+                  }
+                  placeholder="e.g. FAST-NUCES"
+                />
+
+              </div>
+
+            </section>
+
+            {/* =================================================
+                CAREER PREFERENCES
+            ================================================== */}
+
+            <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.018]">
+
+              <div className="border-b border-white/[0.06] px-5 py-4 sm:px-6">
+
+                <SectionHeading
+                  number="03"
+                  icon={Target}
+                  title="Career Direction"
+                  description="Tell ProHire what kind of opportunity you're targeting."
+                />
+
+              </div>
+
+              <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+
+                <Field
+                  icon={BriefcaseBusiness}
+                  label="Preferred Role"
+                  value={form.preferredRole}
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      preferredRole: value,
+                    })
+                  }
+                  placeholder="e.g. AI Engineer"
+                />
+
+                <Field
+                  icon={MapPin}
+                  label="Preferred Location"
+                  value={form.preferredLocation}
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      preferredLocation: value,
+                    })
+                  }
+                  placeholder="e.g. Lahore, Islamabad"
+                />
+
+                <div>
+
+                  <label className="mb-2 flex items-center gap-2 text-[11px] font-medium text-slate-400">
+
+                    <Globe
+                      size={13}
+                      className="text-slate-600"
+                    />
+
+                    Work Preference
+
+                  </label>
+
+                  <select
+                    value={form.remotePref}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        remotePref:
+                          e.target
+                            .value as ProfileFormState["remotePref"],
+                      })
+                    }
+                    className="profile-input"
+                  >
+
+                    <option value="no_preference">
+                      No preference
+                    </option>
+
+                    <option value="remote">
+                      Remote
+                    </option>
+
+                    <option value="onsite">
+                      On-site
+                    </option>
+
+                    <option value="hybrid">
+                      Hybrid
+                    </option>
+
+                  </select>
+
+                </div>
+
+                <Field
+                  icon={Wallet}
+                  label="Expected Salary (PKR/month)"
+                  value={form.expectedSalaryPKR}
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      expectedSalaryPKR: value,
+                    })
+                  }
+                  type="number"
+                  placeholder="e.g. 150000"
+                />
+
+                <Field
+                  icon={Clock3}
+                  label="Availability"
+                  value={form.availability}
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      availability: value,
+                    })
+                  }
+                  placeholder="e.g. Immediately"
+                />
+
+              </div>
+
+            </section>
+
+            {/* =================================================
+                SKILLS
+            ================================================== */}
+
+            <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.018]">
+
+              <div className="border-b border-white/[0.06] px-5 py-4 sm:px-6">
+
+                <SectionHeading
+                  number="04"
+                  icon={Layers3}
+                  title="Skills & Capabilities"
+                  description="Add the technologies, tools, and professional capabilities you can confidently use."
+                />
+
+              </div>
+
+              <div className="p-5 sm:p-6">
+
+                <div className="flex gap-2">
+
+                  <input
+                    value={skillInput}
+                    onChange={(e) =>
+                      setSkillInput(e.target.value)
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addSkill();
+                      }
+                    }}
+                    placeholder="Type a skill and press Enter..."
+                    className="profile-input"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={addSkill}
+                    className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.035] text-slate-400 transition hover:border-cyan-400/25 hover:bg-cyan-400/[0.04] hover:text-cyan-300"
+                  >
+                    <Plus size={17} />
+                  </button>
+
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+
+                  {form.skills.length > 0 ? (
+                    form.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="group flex items-center gap-2 rounded-lg border border-cyan-400/[0.12] bg-cyan-400/[0.045] px-3 py-2 text-[11px] font-medium text-cyan-300"
+                      >
+
+                        {skill}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removeSkill(skill)
+                          }
+                          className="text-cyan-400/40 transition hover:text-rose-400"
+                        >
+                          <X size={12} />
+                        </button>
+
+                      </span>
+                    ))
+                  ) : (
+                    <div className="flex w-full items-center gap-2 rounded-xl border border-dashed border-white/[0.07] px-4 py-4 text-[11px] text-slate-600">
+
+                      <Sparkles size={13} />
+
+                      Add your strongest skills to improve
+                      AI matching.
+
+                    </div>
+                  )}
 
                 </div>
 
               </div>
 
-              <p className="mt-4 text-center text-[11px] leading-5 text-slate-600">
-                {readiness >= 80
-                  ? "Excellent. Your profile is highly informative for AI matching."
-                  : readiness >= 50
-                  ? "Good progress. Add more career context to improve recommendations."
-                  : "Complete more sections to unlock stronger AI career intelligence."}
-              </p>
+            </section>
 
-            </div>
+            {/* =================================================
+                EXPERIENCE
+            ================================================== */}
 
-          </div>
-        </section>
+            <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.018]">
 
-        {/* ======================================================
-            RESUME INTELLIGENCE
-        ======================================================= */}
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4 sm:px-6">
 
-        <section className="relative mb-6 overflow-hidden rounded-2xl border border-cyan-400/[0.12] bg-gradient-to-br from-cyan-500/[0.045] via-white/[0.015] to-purple-500/[0.035]">
+                <SectionHeading
+                  number="05"
+                  icon={BriefcaseBusiness}
+                  title="Professional Experience"
+                  description="Internships, jobs, freelance work, and meaningful professional experience."
+                />
 
-          <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full bg-cyan-400/[0.04] blur-[80px]" />
+                <button
+                  type="button"
+                  onClick={addExperience}
+                  className="hidden items-center gap-1.5 rounded-lg border border-cyan-400/15 bg-cyan-400/[0.04] px-3 py-2 text-[10px] font-semibold text-cyan-300 transition hover:bg-cyan-400/[0.08] sm:flex"
+                >
+                  <Plus size={13} />
+                  Add
+                </button>
 
-          <div className="relative p-6 sm:p-7">
+              </div>
 
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="p-5 sm:p-6">
 
-              <div className="max-w-xl">
+                {form.experience.length === 0 ? (
+                  <EmptyBlock
+                    icon={BriefcaseBusiness}
+                    title="No experience added yet"
+                    description="Add your professional experience so ProHire can understand your career history."
+                    button="Add Experience"
+                    onClick={addExperience}
+                  />
+                ) : (
+                  <div className="space-y-3">
+
+                    {form.experience.map(
+                      (experience, index) => (
+                        <div
+                          key={index}
+                          className="rounded-xl border border-white/[0.07] bg-black/20 p-4"
+                        >
+
+                          <div className="mb-4 flex items-center justify-between">
+
+                            <div className="flex items-center gap-2">
+
+                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-400/[0.06]">
+
+                                <BriefcaseBusiness
+                                  size={13}
+                                  className="text-cyan-400"
+                                />
+
+                              </div>
+
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                                Experience {index + 1}
+                              </span>
+
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                removeExperience(index)
+                              }
+                              className="text-slate-600 transition hover:text-rose-400"
+                              aria-label="Remove experience"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-2">
+
+                            <input
+                              value={experience.title}
+                              onChange={(e) =>
+                                updateExperience(
+                                  index,
+                                  "title",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Job title"
+                              className="profile-input"
+                            />
+
+                            <input
+                              value={experience.company}
+                              onChange={(e) =>
+                                updateExperience(
+                                  index,
+                                  "company",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Company / Organization"
+                              className="profile-input"
+                            />
+
+                            <textarea
+                              value={
+                                experience.description
+                              }
+                              onChange={(e) =>
+                                updateExperience(
+                                  index,
+                                  "description",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Describe your responsibilities, achievements, and impact..."
+                              rows={4}
+                              className="profile-textarea sm:col-span-2"
+                            />
+
+                          </div>
+
+                        </div>
+                      )
+                    )}
+
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={addExperience}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.07] py-3 text-[10px] font-semibold text-slate-600 transition hover:border-cyan-400/20 hover:text-cyan-300 sm:hidden"
+                >
+                  <Plus size={13} />
+                  Add Another Experience
+                </button>
+
+              </div>
+
+            </section>
+
+            {/* =================================================
+                PROJECTS
+            ================================================== */}
+
+            <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.018]">
+
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4 sm:px-6">
+
+                <SectionHeading
+                  number="06"
+                  icon={Layers3}
+                  title="Projects & Proof of Work"
+                  description="Show the AI what you've actually built."
+                />
+
+                <button
+                  type="button"
+                  onClick={addProject}
+                  className="hidden items-center gap-1.5 rounded-lg border border-cyan-400/15 bg-cyan-400/[0.04] px-3 py-2 text-[10px] font-semibold text-cyan-300 transition hover:bg-cyan-400/[0.08] sm:flex"
+                >
+                  <Plus size={13} />
+                  Add
+                </button>
+
+              </div>
+
+              <div className="p-5 sm:p-6">
+
+                {form.projects.length === 0 ? (
+                  <EmptyBlock
+                    icon={Layers3}
+                    title="No projects added yet"
+                    description="Add applications, research, freelance work, or products you've built."
+                    button="Add Project"
+                    onClick={addProject}
+                  />
+                ) : (
+                  <div className="space-y-3">
+
+                    {form.projects.map(
+                      (project, index) => (
+                        <div
+                          key={index}
+                          className="rounded-xl border border-white/[0.07] bg-black/20 p-4"
+                        >
+
+                          <div className="mb-4 flex items-center justify-between">
+
+                            <div className="flex items-center gap-2">
+
+                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-400/[0.06]">
+
+                                <Layers3
+                                  size={13}
+                                  className="text-purple-300"
+                                />
+
+                              </div>
+
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                                Project {index + 1}
+                              </span>
+
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                removeProject(index)
+                              }
+                              className="text-slate-600 transition hover:text-rose-400"
+                              aria-label="Remove project"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+
+                          </div>
+
+                          <div className="space-y-3">
+
+                            <input
+                              value={project.name}
+                              onChange={(e) =>
+                                updateProject(
+                                  index,
+                                  "name",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Project name"
+                              className="profile-input"
+                            />
+
+                            <textarea
+                              value={project.description}
+                              onChange={(e) =>
+                                updateProject(
+                                  index,
+                                  "description",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="What did you build? What problem did it solve? What was your contribution?"
+                              rows={4}
+                              className="profile-textarea"
+                            />
+
+                            <div>
+
+                              <label className="mb-2 flex items-center gap-2 text-[10px] font-medium text-slate-500">
+
+                                <Layers3 size={12} />
+
+                                Technologies
+
+                              </label>
+
+                              <input
+                                value={project.technologies.join(
+                                  ", "
+                                )}
+                                onChange={(e) =>
+                                  updateProjectTechnologies(
+                                    index,
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="React, Next.js, Python, PostgreSQL..."
+                                className="profile-input"
+                              />
+
+                              <p className="mt-1.5 text-[9px] text-slate-700">
+                                Separate technologies with commas.
+                              </p>
+
+                            </div>
+
+                          </div>
+
+                        </div>
+                      )
+                    )}
+
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={addProject}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.07] py-3 text-[10px] font-semibold text-slate-600 transition hover:border-cyan-400/20 hover:text-cyan-300 sm:hidden"
+                >
+                  <Plus size={13} />
+                  Add Another Project
+                </button>
+
+              </div>
+
+            </section>
+
+            {/* =================================================
+                LINKS
+            ================================================== */}
+
+            <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.018]">
+
+              <div className="border-b border-white/[0.06] px-5 py-4 sm:px-6">
+
+                <SectionHeading
+                  number="07"
+                  icon={Link2}
+                  title="Professional Presence"
+                  description="Connect your public work and professional profiles."
+                />
+
+              </div>
+
+              <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+
+                <LinkField
+                  icon={Github}
+                  label="GitHub"
+                  value={form.githubUrl}
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      githubUrl: value,
+                    })
+                  }
+                  placeholder="https://github.com/username"
+                />
+
+                <LinkField
+                  icon={Linkedin}
+                  label="LinkedIn"
+                  value={form.linkedinUrl}
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      linkedinUrl: value,
+                    })
+                  }
+                  placeholder="https://linkedin.com/in/username"
+                />
+
+                <LinkField
+                  icon={Globe}
+                  label="Portfolio"
+                  value={form.portfolioUrl}
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      portfolioUrl: value,
+                    })
+                  }
+                  placeholder="https://yourportfolio.com"
+                />
+
+              </div>
+
+            </section>
+
+            {/* =================================================
+                ERROR
+            ================================================== */}
+
+            {error && (
+              <div className="flex items-start gap-3 rounded-xl border border-rose-400/15 bg-rose-400/[0.035] p-4 text-xs text-rose-300">
+
+                <X
+                  size={15}
+                  className="mt-0.5 shrink-0"
+                />
+
+                <span>{error}</span>
+
+              </div>
+            )}
+
+            {/* =================================================
+                SAVE
+            ================================================== */}
+
+            <div className="sticky bottom-4 z-20">
+
+              <div className="flex flex-col gap-4 rounded-2xl border border-white/[0.09] bg-[#090d12]/90 p-4 shadow-2xl backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:p-4">
 
                 <div className="flex items-center gap-3">
 
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/[0.07]">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-cyan-400/10 bg-cyan-400/[0.04]">
 
-                    <ScanSearch
-                      size={19}
-                      className="text-cyan-400"
-                    />
+                    {saved ? (
+                      <CheckCircle2
+                        size={16}
+                        className="text-emerald-400"
+                      />
+                    ) : (
+                      <ShieldCheck
+                        size={16}
+                        className="text-cyan-400"
+                      />
+                    )}
 
                   </div>
 
                   <div>
 
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400">
-                      Resume Intelligence Agent
+                    <p className="text-xs font-semibold">
+
+                      {saved
+                        ? "Profile saved successfully"
+                        : "Your profile powers ProHire AI"}
+
                     </p>
 
-                    <h2 className="mt-1 text-base font-semibold">
-                      Let AI understand your resume
-                    </h2>
+                    <p className="mt-0.5 text-[10px] text-slate-600">
 
-                  </div>
+                      {saved
+                        ? "Your latest career context is now available to your agents."
+                        : `${completion.completed} of ${completion.total} profile signals completed.`}
 
-                </div>
-
-                <p className="mt-3 text-xs leading-5 text-slate-500">
-                  Upload a PDF or DOCX and ProHire will extract useful
-                  career signals from your resume, identify skills, and
-                  surface improvement opportunities.
-                </p>
-
-              </div>
-
-              <label className="group relative flex min-h-[105px] w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-white/[0.12] bg-black/20 px-5 transition hover:border-cyan-400/30 hover:bg-cyan-400/[0.025] lg:max-w-[340px]">
-
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04]">
-                  {resumeUploading ? (
-                    <BrainCircuit
-                      size={17}
-                      className="animate-pulse text-cyan-400"
-                    />
-                  ) : (
-                    <Upload
-                      size={17}
-                      className="text-cyan-400"
-                    />
-                  )}
-                </div>
-
-                <span className="mt-2 text-xs font-medium text-slate-300">
-                  {resumeUploading
-                    ? "Analyzing your resume..."
-                    : "Upload Resume / CV"}
-                </span>
-
-                <span className="mt-1 text-[10px] text-slate-600">
-                  PDF or DOCX
-                </span>
-
-                <input
-                  type="file"
-                  accept=".pdf,.docx"
-                  onChange={handleResumeUpload}
-                  className="hidden"
-                />
-
-              </label>
-
-            </div>
-
-            {/* Resume analysis */}
-
-            {resumeAnalysis && (
-              <div className="mt-6 grid gap-4 border-t border-white/[0.06] pt-5 md:grid-cols-2">
-
-                <div className="rounded-xl border border-emerald-400/10 bg-emerald-400/[0.025] p-4">
-
-                  <div className="flex items-center gap-2">
-
-                    <WandSparkles
-                      size={15}
-                      className="text-emerald-400"
-                    />
-
-                    <p className="text-xs font-semibold text-emerald-400">
-                      AI Suggestions
                     </p>
 
                   </div>
 
-                  <ul className="mt-3 space-y-2">
-
-                    {resumeAnalysis.suggestions.map((suggestion, i) => (
-                      <li
-                        key={i}
-                        className="flex gap-2 text-[11px] leading-5 text-slate-500"
-                      >
-                        <CheckCircle2
-                          size={13}
-                          className="mt-0.5 shrink-0 text-emerald-400"
-                        />
-
-                        {suggestion}
-                      </li>
-                    ))}
-
-                  </ul>
-
                 </div>
 
-                {resumeAnalysis.missingKeywords.length > 0 && (
-                  <div className="rounded-xl border border-amber-400/10 bg-amber-400/[0.025] p-4">
-
-                    <div className="flex items-center gap-2">
-
-                      <Lightbulb
-                        size={15}
-                        className="text-amber-300"
-                      />
-
-                      <p className="text-xs font-semibold text-amber-300">
-                        Potential Keywords
-                      </p>
-
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-
-                      {resumeAnalysis.missingKeywords.map(
-                        (keyword, i) => (
-                          <span
-                            key={i}
-                            className="rounded-full border border-amber-400/10 bg-amber-400/[0.04] px-2.5 py-1 text-[10px] text-slate-400"
-                          >
-                            {keyword}
-                          </span>
-                        )
-                      )}
-
-                    </div>
-
-                  </div>
-                )}
-
-              </div>
-            )}
-
-          </div>
-        </section>
-
-        {/* ======================================================
-            MAIN PROFILE FORM
-        ======================================================= */}
-
-        <form
-          onSubmit={handleSave}
-          className="space-y-5"
-        >
-
-          {/* ==================================================
-              PERSONAL IDENTITY
-          =================================================== */}
-
-          <ProfileSection
-            icon={User}
-            eyebrow="01 / Identity"
-            title="Professional Identity"
-            description="Tell ProHire who you are and how you want to be represented."
-          >
-
-            <div className="grid gap-4 md:grid-cols-2">
-
-              <Field
-                label="Full Name"
-                value={form.fullName}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    fullName: v,
-                  })
-                }
-                required
-                placeholder="Your full name"
-              />
-
-              <Field
-                label="University"
-                value={form.university}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    university: v,
-                  })
-                }
-                placeholder="Your university"
-              />
-
-              <Field
-                label="Preferred Role"
-                value={form.preferredRole}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    preferredRole: v,
-                  })
-                }
-                placeholder="e.g. AI Engineer"
-              />
-
-              <Field
-                label="Preferred Location"
-                value={form.preferredLocation}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    preferredLocation: v,
-                  })
-                }
-                placeholder="e.g. Islamabad, Lahore, Karachi"
-              />
-
-            </div>
-
-          </ProfileSection>
-
-          {/* ==================================================
-              CAREER PREFERENCES
-          =================================================== */}
-
-          <ProfileSection
-            icon={Target}
-            eyebrow="02 / Direction"
-            title="Career Preferences"
-            description="Define the conditions and opportunities you're looking for."
-          >
-
-            <div className="grid gap-4 md:grid-cols-2">
-
-              <div>
-                <label className="mb-2 block text-xs font-medium text-slate-400">
-                  Remote Preference
-                </label>
-
-                <select
-                  value={form.remotePref}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      remotePref:
-                        e.target.value as ProfileFormState["remotePref"],
-                    })
-                  }
-                  className="profile-input"
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-500 px-6 py-3 text-xs font-bold text-white shadow-lg shadow-cyan-500/[0.08] transition hover:-translate-y-0.5 hover:shadow-cyan-500/[0.15] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <option value="no_preference">
-                    No preference
-                  </option>
 
-                  <option value="remote">
-                    Remote
-                  </option>
-
-                  <option value="onsite">
-                    On-site
-                  </option>
-
-                  <option value="hybrid">
-                    Hybrid
-                  </option>
-                </select>
-              </div>
-
-              <Field
-                label="Expected Salary (PKR/month)"
-                value={form.expectedSalaryPKR}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    expectedSalaryPKR: v,
-                  })
-                }
-                type="number"
-                placeholder="e.g. 100000"
-              />
-
-              <Field
-                label="Availability"
-                value={form.availability}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    availability: v,
-                  })
-                }
-                placeholder="e.g. Immediately, 2 weeks notice"
-              />
-
-            </div>
-
-          </ProfileSection>
-
-          {/* ==================================================
-              SKILLS
-          =================================================== */}
-
-          <ProfileSection
-            icon={Layers3}
-            eyebrow="03 / Capability"
-            title="Skills & Expertise"
-            description="These signals help the Job Discovery and Career Intelligence agents understand your capabilities."
-          >
-
-            <div className="flex gap-2">
-
-              <input
-                value={skillInput}
-                onChange={(e) =>
-                  setSkillInput(e.target.value)
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addSkill();
-                  }
-                }}
-                placeholder="Add a skill — e.g. React, Python, Machine Learning"
-                className="profile-input flex-1"
-              />
-
-              <button
-                type="button"
-                onClick={addSkill}
-                className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-white/[0.09] bg-white/[0.035] text-slate-400 transition hover:border-cyan-400/30 hover:bg-cyan-400/[0.05] hover:text-cyan-400"
-              >
-                <Plus size={17} />
-              </button>
-
-            </div>
-
-            <div className="mt-4 flex min-h-[35px] flex-wrap gap-2">
-
-              {form.skills.length > 0 ? (
-                form.skills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="group flex items-center gap-1.5 rounded-full border border-cyan-400/10 bg-cyan-400/[0.045] px-3 py-1.5 text-[11px] font-medium text-cyan-300"
-                  >
-                    {skill}
-
-                    <button
-                      type="button"
-                      onClick={() => removeSkill(skill)}
-                      className="text-cyan-400/50 transition hover:text-rose-400"
-                    >
-                      <X size={12} />
-                    </button>
-                  </span>
-                ))
-              ) : (
-                <p className="text-[11px] text-slate-600">
-                  No skills added yet. Add your strongest skills above.
-                </p>
-              )}
-
-            </div>
-
-          </ProfileSection>
-
-          {/* ==================================================
-              EXPERIENCE
-          =================================================== */}
-
-          <ProfileSection
-            icon={BriefcaseBusiness}
-            eyebrow="04 / Experience"
-            title="Professional Experience"
-            description="Show the AI what you've actually done, not just what you've studied."
-            action={
-              <button
-                type="button"
-                onClick={addExperience}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 transition hover:text-cyan-300"
-              >
-                <Plus size={14} />
-                Add Experience
-              </button>
-            }
-          >
-
-            {form.experience.length === 0 ? (
-              <EmptyState
-                icon={BriefcaseBusiness}
-                title="No experience added"
-                description="Add internships, jobs, freelance work, or other professional experience."
-                action="Add Experience"
-                onClick={addExperience}
-              />
-            ) : (
-              <div className="space-y-3">
-
-                {form.experience.map((exp, i) => (
-                  <div
-                    key={i}
-                    className="group relative rounded-xl border border-white/[0.06] bg-black/20 p-4 transition hover:border-white/[0.1]"
-                  >
-
-                    <div className="absolute right-4 top-4">
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          removeExperience(i)
-                        }
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-600 transition hover:bg-rose-400/[0.06] hover:text-rose-400"
-                        aria-label="Remove experience"
-                      >
-                        <X size={14} />
-                      </button>
-
-                    </div>
-
-                    <div className="grid gap-3 md:grid-cols-2">
-
-                      <SmallField
-                        placeholder="Job title"
-                        value={exp.title}
-                        onChange={(value) => {
-                          const next = [
-                            ...form.experience,
-                          ];
-
-                          next[i] = {
-                            ...next[i],
-                            title: value,
-                          };
-
-                          setForm({
-                            ...form,
-                            experience: next,
-                          });
-                        }}
-                      />
-
-                      <SmallField
-                        placeholder="Company / Organization"
-                        value={exp.company}
-                        onChange={(value) => {
-                          const next = [
-                            ...form.experience,
-                          ];
-
-                          next[i] = {
-                            ...next[i],
-                            company: value,
-                          };
-
-                          setForm({
-                            ...form,
-                            experience: next,
-                          });
-                        }}
-                      />
-
-                      <textarea
-                        placeholder="Describe your responsibilities, achievements, and impact..."
-                        value={exp.description}
-                        onChange={(e) => {
-                          const next = [
-                            ...form.experience,
-                          ];
-
-                          next[i] = {
-                            ...next[i],
-                            description: e.target.value,
-                          };
-
-                          setForm({
-                            ...form,
-                            experience: next,
-                          });
-                        }}
-                        rows={4}
-                        className="profile-textarea md:col-span-2"
-                      />
-
-                    </div>
-
-                  </div>
-                ))}
-
-              </div>
-            )}
-
-          </ProfileSection>
-
-          {/* ==================================================
-              PROJECTS
-          =================================================== */}
-
-          <ProfileSection
-            icon={Layers3}
-            eyebrow="05 / Proof of Work"
-            title="Projects"
-            description="Projects give ProHire concrete evidence of what you can build."
-            action={
-              <button
-                type="button"
-                onClick={addProject}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 transition hover:text-cyan-300"
-              >
-                <Plus size={14} />
-                Add Project
-              </button>
-            }
-          >
-
-            {form.projects.length === 0 ? (
-              <EmptyState
-                icon={Layers3}
-                title="No projects added"
-                description="Add projects, products, research, or meaningful work you've built."
-                action="Add Project"
-                onClick={addProject}
-              />
-            ) : (
-              <div className="space-y-3">
-
-                {form.projects.map((project, i) => (
-                  <div
-                    key={i}
-                    className="relative rounded-xl border border-white/[0.06] bg-black/20 p-4"
-                  >
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        removeProject(i)
-                      }
-                      className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-lg text-slate-600 transition hover:bg-rose-400/[0.06] hover:text-rose-400"
-                      aria-label="Remove project"
-                    >
-                      <X size={14} />
-                    </button>
-
-                    <div className="space-y-3">
-
-                      <SmallField
-                        placeholder="Project name"
-                        value={project.name}
-                        onChange={(value) => {
-                          const next = [
-                            ...form.projects,
-                          ];
-
-                          next[i] = {
-                            ...next[i],
-                            name: value,
-                          };
-
-                          setForm({
-                            ...form,
-                            projects: next,
-                          });
-                        }}
-                      />
-
-                      <textarea
-                        placeholder="Describe what you built, the problem it solved, and the impact..."
-                        value={project.description}
-                        onChange={(e) => {
-                          const next = [
-                            ...form.projects,
-                          ];
-
-                          next[i] = {
-                            ...next[i],
-                            description:
-                              e.target.value,
-                          };
-
-                          setForm({
-                            ...form,
-                            projects: next,
-                          });
-                        }}
-                        rows={4}
-                        className="profile-textarea"
-                      />
-
-                    </div>
-
-                  </div>
-                ))}
-
-              </div>
-            )}
-
-          </ProfileSection>
-
-          {/* ==================================================
-              DIGITAL PRESENCE
-          =================================================== */}
-
-          <ProfileSection
-            icon={Globe}
-            eyebrow="06 / Presence"
-            title="Professional Presence"
-            description="Connect your public work so ProHire can better understand your professional footprint."
-          >
-
-            <div className="grid gap-4 md:grid-cols-2">
-
-              <IconField
-                icon={Github}
-                label="GitHub URL"
-                value={form.githubUrl}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    githubUrl: v,
-                  })
-                }
-                placeholder="https://github.com/..."
-              />
-
-              <IconField
-                icon={Linkedin}
-                label="LinkedIn URL"
-                value={form.linkedinUrl}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    linkedinUrl: v,
-                  })
-                }
-                placeholder="https://linkedin.com/in/..."
-              />
-
-              <IconField
-                icon={Globe}
-                label="Portfolio URL"
-                value={form.portfolioUrl}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    portfolioUrl: v,
-                  })
-                }
-                placeholder="https://yourportfolio.com"
-              />
-
-            </div>
-
-          </ProfileSection>
-
-          {/* ==================================================
-              ERROR / SAVE
-          =================================================== */}
-
-          {error && (
-            <div className="rounded-xl border border-rose-400/15 bg-rose-400/[0.04] p-4 text-xs text-rose-300">
-              {error}
-            </div>
-          )}
-
-          <section className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-r from-cyan-500/[0.055] via-white/[0.015] to-purple-500/[0.055] p-5 sm:p-6">
-
-            <div className="pointer-events-none absolute right-0 top-0 h-40 w-40 rounded-full bg-purple-500/[0.06] blur-[70px]" />
-
-            <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
-              <div className="flex gap-3">
-
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-400/15 bg-cyan-400/[0.05]">
-
-                  {saved ? (
-                    <CheckCircle2
-                      size={18}
-                      className="text-emerald-400"
-                    />
-                  ) : (
-                    <Sparkles
-                      size={18}
-                      className="text-cyan-400"
+                  {saving
+                    ? "Saving profile..."
+                    : saved
+                    ? "Profile Saved"
+                    : "Save Career Profile"}
+
+                  {!saving && !saved && (
+                    <ArrowRight
+                      size={14}
+                      className="transition-transform group-hover:translate-x-1"
                     />
                   )}
 
-                </div>
-
-                <div>
-
-                  <p className="text-sm font-semibold">
-                    {saved
-                      ? "Your career identity is saved."
-                      : "Ready to power your AI career journey?"}
-                  </p>
-
-                  <p className="mt-1 text-[11px] leading-5 text-slate-600">
-                    {saved
-                      ? "Your profile is now available to ProHire's intelligence layer."
-                      : "Save your profile so ProHire can use your career context across its AI agents."}
-                  </p>
-
-                </div>
+                </button>
 
               </div>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-500 px-6 py-3 text-sm font-semibold shadow-lg shadow-cyan-500/[0.1] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-cyan-500/[0.18] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-
-                {saving
-                  ? "Saving..."
-                  : saved
-                  ? "Saved ✓"
-                  : "Save Career Profile"}
-
-                {!saving && !saved && (
-                  <ArrowRight
-                    size={15}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
-                )}
-
-              </button>
-
             </div>
 
-          </section>
+          </form>
 
-        </form>
+        </div>
 
-        {/* ======================================================
-            BOTTOM TRUST STRIP
-        ======================================================= */}
+        {/* =====================================================
+            FOOTER
+        ====================================================== */}
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pb-5 text-[10px] text-slate-700">
+        <div className="flex flex-wrap items-center justify-center gap-5 py-7 text-[9px] uppercase tracking-wider text-slate-700">
 
           <span className="flex items-center gap-1.5">
             <ShieldCheck size={11} />
-            Career Data Protected
+            Secure Career Data
           </span>
 
           <span className="flex items-center gap-1.5">
             <BrainCircuit size={11} />
-            AI-Powered Profile Intelligence
+            AI Context Layer
           </span>
 
           <span className="flex items-center gap-1.5">
             <Target size={11} />
-            Built for the Pakistani Job Market
+            Pakistan-Focused Intelligence
           </span>
 
         </div>
@@ -1352,257 +1615,90 @@ export default function ProfilePage() {
   );
 }
 
-/* ==============================================================
-   PROFILE SECTION
-============================================================== */
+/* =============================================================
+   SECTION HEADING
+============================================================= */
 
-function ProfileSection({
+function SectionHeading({
+  number,
   icon: Icon,
-  eyebrow,
   title,
   description,
-  children,
-  action,
 }: {
+  number: string;
   icon: React.ElementType;
-  eyebrow: string;
   title: string;
   description: string;
-  children: React.ReactNode;
-  action?: React.ReactNode;
 }) {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.018]">
+    <div className="flex items-start gap-3">
 
-      <div className="p-5 sm:p-6">
+      <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.025]">
 
-        <div className="mb-5 flex items-start justify-between gap-4">
+        <Icon
+          size={15}
+          className="text-cyan-400"
+        />
 
-          <div className="flex gap-3">
-
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03]">
-
-              <Icon
-                size={16}
-                className="text-cyan-400"
-              />
-
-            </div>
-
-            <div>
-
-              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-cyan-400/70">
-                {eyebrow}
-              </p>
-
-              <h2 className="mt-1 text-base font-semibold tracking-tight">
-                {title}
-              </h2>
-
-              <p className="mt-1 max-w-xl text-[11px] leading-5 text-slate-600">
-                {description}
-              </p>
-
-            </div>
-
-          </div>
-
-          {action}
-
-        </div>
-
-        {children}
+        <span className="absolute -right-1 -top-1 text-[7px] font-bold text-slate-700">
+          {number}
+        </span>
 
       </div>
 
-    </section>
-  );
-}
+      <div>
 
-/* ==============================================================
-   FIELD
-============================================================== */
+        <h2 className="text-sm font-semibold">
+          {title}
+        </h2>
 
-function Field({
-  label,
-  value,
-  onChange,
-  type = "text",
-  required = false,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  required?: boolean;
-  placeholder?: string;
-}) {
-  return (
-    <div>
+        <p className="mt-1 text-[10px] leading-4 text-slate-600">
+          {description}
+        </p>
 
-      <label className="mb-2 block text-xs font-medium text-slate-400">
-        {label}
-
-        {required && (
-          <span className="ml-1 text-cyan-400">
-            *
-          </span>
-        )}
-      </label>
-
-      <input
-        type={type}
-        required={required}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) =>
-          onChange(e.target.value)
-        }
-        className="profile-input"
-      />
+      </div>
 
     </div>
   );
 }
 
-/* ==============================================================
-   SMALL FIELD
-============================================================== */
+/* =============================================================
+   SIDEBAR STEP
+============================================================= */
 
-function SmallField({
-  value,
-  onChange,
-  placeholder,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <input
-      value={value}
-      placeholder={placeholder}
-      onChange={(e) =>
-        onChange(e.target.value)
-      }
-      className="profile-input"
-    />
-  );
-}
-
-/* ==============================================================
-   ICON FIELD
-============================================================== */
-
-function IconField({
-  icon: Icon,
+function SidebarStep({
+  number,
   label,
-  value,
-  onChange,
-  placeholder,
+  done,
 }: {
-  icon: React.ElementType;
+  number: string;
   label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
+  done: boolean;
 }) {
   return (
-    <div>
+    <div className="flex items-center gap-3 rounded-lg px-2 py-2">
 
-      <label className="mb-2 flex items-center gap-1.5 text-xs font-medium text-slate-400">
-
-        <Icon
-          size={13}
-          className="text-slate-500"
-        />
-
-        {label}
-
-      </label>
-
-      <input
-        value={value}
-        onChange={(e) =>
-          onChange(e.target.value)
-        }
-        placeholder={placeholder}
-        className="profile-input"
-      />
-
-    </div>
-  );
-}
-
-/* ==============================================================
-   EMPTY STATE
-============================================================== */
-
-function EmptyState({
-  icon: Icon,
-  title,
-  description,
-  action,
-  onClick,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  action: string;
-  onClick: () => void;
-}) {
-  return (
-    <div className="rounded-xl border border-dashed border-white/[0.08] bg-black/10 p-7 text-center">
-
-      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.035]">
-        <Icon
-          size={18}
-          className="text-slate-600"
-        />
-      </div>
-
-      <p className="mt-3 text-xs font-medium text-slate-400">
-        {title}
-      </p>
-
-      <p className="mx-auto mt-1 max-w-md text-[11px] leading-5 text-slate-600">
-        {description}
-      </p>
-
-      <button
-        type="button"
-        onClick={onClick}
-        className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300"
+      <div
+        className={`flex h-6 w-6 items-center justify-center rounded-md border text-[8px] font-bold ${
+          done
+            ? "border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-400"
+            : "border-white/[0.07] bg-white/[0.02] text-slate-700"
+        }`}
       >
-        <Plus size={13} />
-        {action}
-      </button>
+        {done ? (
+          <Check size={11} />
+        ) : (
+          number
+        )}
+      </div>
 
-    </div>
-  );
-}
-
-/* ==============================================================
-   PROFILE SIGNAL
-============================================================== */
-
-function ProfileSignal({
-  icon: Icon,
-  label,
-}: {
-  icon: React.ElementType;
-  label: string;
-}) {
-  return (
-    <div className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5">
-
-      <Icon
-        size={12}
-        className="text-cyan-400"
-      />
-
-      <span className="text-[10px] font-medium text-slate-400">
+      <span
+        className={`text-[10px] ${
+          done
+            ? "text-slate-400"
+            : "text-slate-600"
+        }`}
+      >
         {label}
       </span>
 
@@ -1610,15 +1706,168 @@ function ProfileSignal({
   );
 }
 
-/* ==============================================================
-   SIGNAL ARROW
-============================================================== */
+/* =============================================================
+   FIELD
+============================================================= */
 
-function SignalArrow() {
+function Field({
+  icon: Icon,
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  required = false,
+}: {
+  icon?: React.ElementType;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+  required?: boolean;
+}) {
   return (
-    <ChevronRight
-      size={12}
-      className="hidden text-slate-700 sm:block"
-    />
+    <div>
+
+      <label className="mb-2 flex items-center gap-2 text-[11px] font-medium text-slate-400">
+
+        {Icon && (
+          <Icon
+            size={13}
+            className="text-slate-600"
+          />
+        )}
+
+        {label}
+
+        {required && (
+          <span className="text-cyan-400">
+            *
+          </span>
+        )}
+
+      </label>
+
+      <input
+        type={type}
+        value={value}
+        required={required}
+        onChange={(e) =>
+          onChange(e.target.value)
+        }
+        placeholder={placeholder}
+        className="profile-input"
+      />
+
+    </div>
+  );
+}
+
+/* =============================================================
+   LINK FIELD
+============================================================= */
+
+function LinkField({
+  icon: Icon,
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+
+      <label className="mb-2 flex items-center gap-2 text-[11px] font-medium text-slate-400">
+
+        <Icon
+          size={13}
+          className="text-slate-600"
+        />
+
+        {label}
+
+      </label>
+
+      <div className="relative">
+
+        <Link2
+          size={13}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-700"
+        />
+
+        <input
+          value={value}
+          onChange={(e) =>
+            onChange(e.target.value)
+          }
+          placeholder={placeholder}
+          className="profile-input pl-9"
+        />
+
+      </div>
+
+    </div>
+  );
+}
+
+/* =============================================================
+   EMPTY BLOCK
+============================================================= */
+
+function EmptyBlock({
+  icon: Icon,
+  title,
+  description,
+  button,
+  onClick,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  button: string;
+  onClick: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-dashed border-white/[0.07] bg-black/10 px-5 py-8 text-center">
+
+      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.025]">
+
+        <Icon
+          size={17}
+          className="text-slate-600"
+        />
+
+      </div>
+
+      <h3 className="mt-3 text-xs font-semibold text-slate-400">
+        {title}
+      </h3>
+
+      <p className="mx-auto mt-1 max-w-md text-[10px] leading-5 text-slate-600">
+        {description}
+      </p>
+
+      <button
+        type="button"
+        onClick={onClick}
+        className="mt-4 inline-flex items-center gap-1.5 text-[10px] font-semibold text-cyan-400 transition hover:text-cyan-300"
+      >
+
+        <Plus size={13} />
+
+        {button}
+
+        <ChevronRight size={12} />
+
+      </button>
+
+    </div>
   );
 }
