@@ -1,27 +1,30 @@
+```tsx
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, type ElementType } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Navbar } from "@/components/Navbar";
-import { AgentStatusPill } from "@/components/AgentStatusPill";
 import {
-  User,
-  Target,
-  Mic,
-  TrendingUp,
   ArrowRight,
-  CheckCircle,
-  Briefcase,
-  BarChart3,
-  Compass,
-  Rocket,
+  Bell,
+  BriefcaseBusiness,
+  ChevronDown,
   ChevronRight,
-  Plus,
-  Filter,
-  AlertCircle,
+  CircleCheck,
+  Compass,
+  LayoutDashboard,
+  Menu,
+  Mic,
+  MoreHorizontal,
+  Search,
+  Settings,
   Sparkles,
+  Target,
+  TrendingUp,
+  User,
+  Users,
+  X,
   Zap,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
@@ -32,533 +35,967 @@ interface ProfileSummary {
   preferredRole?: string;
 }
 
+type AgentStatus = "done" | "ready" | "idle";
+
+interface Agent {
+  name: string;
+  shortName: string;
+  description: string;
+  icon: ElementType;
+  status: AgentStatus;
+  gradient: string;
+}
+
+const AGENTS: Agent[] = [
+  {
+    name: "Profile Agent",
+    shortName: "Profile",
+    description: "Your source of truth",
+    icon: User,
+    status: "done",
+    gradient: "from-emerald-400/20 to-teal-400/5",
+  },
+  {
+    name: "Job Discovery Agent",
+    shortName: "Job Discovery",
+    description: "Find your best opportunities",
+    icon: Target,
+    status: "ready",
+    gradient: "from-blue-400/20 to-indigo-400/5",
+  },
+  {
+    name: "Application Agent",
+    shortName: "Applications",
+    description: "Optimize every application",
+    icon: BriefcaseBusiness,
+    status: "ready",
+    gradient: "from-violet-400/20 to-purple-400/5",
+  },
+  {
+    name: "Interview Agent",
+    shortName: "Interview",
+    description: "Prepare with adaptive AI",
+    icon: Mic,
+    status: "ready",
+    gradient: "from-orange-400/20 to-amber-400/5",
+  },
+  {
+    name: "Career Intelligence",
+    shortName: "Career AI",
+    description: "Turn gaps into a roadmap",
+    icon: TrendingUp,
+    status: "ready",
+    gradient: "from-cyan-400/20 to-sky-400/5",
+  },
+];
+
 export default function DashboardPage() {
-  const { status, data: session } = useSession();
+  const { status } = useSession();
   const router = useRouter();
+
   const [profile, setProfile] = useState<ProfileSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [profileError, setProfileError] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
   }, [status, router]);
 
   useEffect(() => {
-    apiFetch("/api/profile")
-      .then((r) => r.json())
-      .then((data) => {
-        setProfile(data.profile);
-        setLoading(false);
-      });
-  }, []);
+    let mounted = true;
 
-  // Mouse parallax
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width - 0.5;
-        const y = (e.clientY - rect.top) / rect.height - 0.5;
-        setMousePosition({ x, y });
+    async function loadProfile() {
+      try {
+        const response = await apiFetch("/api/profile");
+
+        if (!response.ok) {
+          throw new Error("Failed to load profile");
+        }
+
+        const data = await response.json();
+
+        if (mounted) {
+          setProfile(data.profile ?? null);
+        }
+      } catch {
+        if (mounted) {
+          setProfileError(true);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
+    }
+
+    loadProfile();
+
+    return () => {
+      mounted = false;
     };
-    document.addEventListener("mousemove", handleMouseMove);
-    return () => document.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const hasProfile = !!profile?.fullName;
-  const userName = profile?.fullName?.split(" ")[0] || session?.user?.name?.split(" ")[0] || "";
+  const hasProfile = Boolean(profile?.fullName);
 
-  // Stats Data
-  const stats = [
-    { label: "Match Score", value: "94%", icon: Target, change: "+12%", color: "from-blue-400 to-teal-400" },
-    { label: "Interviews", value: "12", icon: Mic, change: "+3 this week", color: "from-purple-400 to-pink-400" },
-    { label: "Skill Progress", value: "78%", icon: BarChart3, change: "+5%", color: "from-amber-400 to-orange-400" },
-    { label: "Applications", value: "8", icon: Briefcase, change: "2 pending", color: "from-rose-400 to-pink-400" },
-  ];
+  const firstName = useMemo(() => {
+    if (!profile?.fullName) return "there";
+    return profile.fullName.trim().split(/\s+/)[0];
+  }, [profile?.fullName]);
 
-  // Journey Steps
-  const journeySteps = [
-    {
-      icon: User,
-      title: "Profile",
-      desc: "Your verified source of truth — skills, experience, projects, resume.",
-      href: "/profile",
-      cta: hasProfile ? "Edit Profile" : "Set Up Profile",
-      done: hasProfile,
-      disabled: false,
-      color: "from-blue-400 to-teal-400",
-    },
-    {
-      icon: Target,
-      title: "AI Job Matching",
-      desc: "Explainable compatibility scores against Pakistan-relevant roles.",
-      href: "/jobs",
-      cta: "View Matches",
-      done: false,
-      disabled: !hasProfile,
-      color: "from-purple-400 to-pink-400",
-    },
-    {
-      icon: Mic,
-      title: "AI Interview",
-      desc: "Adaptive, role-specific mock interview with live follow-ups.",
-      href: "/interviews",
-      cta: "Start Practice",
-      done: false,
-      disabled: !hasProfile,
-      color: "from-amber-400 to-orange-400",
-    },
-    {
-      icon: TrendingUp,
-      title: "Career Roadmap",
-      desc: "A sequenced skill plan built from your real gaps.",
-      href: "/roadmap",
-      cta: "View Roadmap",
-      done: false,
-      disabled: !hasProfile,
-      color: "from-rose-400 to-pink-400",
-    },
-  ];
+  const initials = useMemo(() => {
+    if (!profile?.fullName) return "P";
 
-  // Recent Activity
-  const recentActivity = [
-    { time: "2 min ago", event: "AI Interview completed", status: "success", icon: Mic },
-    { time: "1 hour ago", event: "New job match: Senior Developer", status: "info", icon: Target },
-    { time: "3 hours ago", event: "Profile updated", status: "success", icon: User },
-    { time: "1 day ago", event: "Career roadmap generated", status: "info", icon: TrendingUp },
-  ];
+    return profile.fullName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase();
+  }, [profile?.fullName]);
 
-  // Skills
-  const skills = [
-    { name: "React", level: 85 },
-    { name: "TypeScript", level: 78 },
-    { name: "Node.js", level: 72 },
-    { name: "Python", level: 65 },
-    { name: "AWS", level: 55 },
-  ];
-
-  // Recommended Jobs
-  const recommendedJobs = [
-    {
-      title: "Senior Software Engineer",
-      company: "TechCorp Pakistan",
-      match: 94,
-      location: "Lahore",
-      type: "Full-time",
-    },
-    {
-      title: "Full Stack Developer",
-      company: "Innovation Labs",
-      match: 87,
-      location: "Islamabad",
-      type: "Remote",
-    },
-    {
-      title: "AI/ML Engineer",
-      company: "DataScience Inc",
-      match: 82,
-      location: "Karachi",
-      type: "Hybrid",
-    },
-  ];
+  if (status === "loading" || (loading && !profile)) {
+    return <DashboardSkeleton />;
+  }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#050505] text-white overflow-x-hidden">
-      {/* Premium Animated Background */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div
-          className="absolute -top-[30%] -right-[20%] h-[80vh] w-[80vh] rounded-full bg-gradient-to-br from-blue-600/10 via-teal-500/10 to-purple-600/10 blur-[120px]"
-          style={{
-            transform: `translate(${mousePosition.x * 20}px, ${mousePosition.y * 20}px)`,
-            transition: "transform 0.3s ease-out",
-          }}
-        />
-        <div
-          className="absolute -bottom-[30%] -left-[20%] h-[80vh] w-[80vh] rounded-full bg-gradient-to-tr from-purple-600/10 via-pink-500/10 to-blue-600/10 blur-[120px]"
-          style={{
-            transform: `translate(${-mousePosition.x * 20}px, ${-mousePosition.y * 20}px)`,
-            transition: "transform 0.3s ease-out",
-          }}
-        />
-        <div className="absolute top-1/2 left-1/2 h-[60vh] w-[60vh] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-500/5 via-teal-500/5 to-purple-500/5 blur-[100px]" />
-        <div className="absolute top-0 left-0 h-full w-full bg-[url('/grid.svg')] opacity-[0.015]" />
-        
-        {/* Floating particles */}
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-blue-400/10"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 3 + 1}px`,
-              height: `${Math.random() * 3 + 1}px`,
-              animation: `float-particle ${Math.random() * 15 + 10}s ease-in-out ${Math.random() * 5}s infinite`,
-            }}
-          />
-        ))}
+    <div className="min-h-screen bg-[#f7f9fc] text-[#0b1220]">
+      {/* Ambient background */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -right-40 -top-40 h-[520px] w-[520px] rounded-full bg-cyan-300/10 blur-3xl" />
+        <div className="absolute left-[30%] top-[20%] h-[400px] w-[400px] rounded-full bg-blue-300/5 blur-3xl" />
       </div>
 
-      <Navbar />
+      <div className="relative flex min-h-screen">
+        {/* Desktop Sidebar */}
+        <aside className="hidden w-[248px] shrink-0 border-r border-black/[0.055] bg-white/75 backdrop-blur-2xl lg:flex lg:flex-col">
+          <Sidebar initials={initials} />
+        </aside>
 
-      <main className="mx-auto max-w-7xl px-6 pt-28 pb-12 md:px-8">
-        {/* Welcome Header */}
-        <div className="animate-in slide-in-from-top-10 fade-in duration-700">
-          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-            <div>
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 via-teal-500 to-purple-500 p-[2px] shadow-xl shadow-blue-500/30">
-                    <div className="flex h-full w-full items-center justify-center rounded-2xl bg-[#050505]">
-                      <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-teal-400 to-purple-400 bg-clip-text text-transparent">
-                        {userName?.charAt(0) || "U"}
-                      </span>
-                    </div>
-                  </div>
-                  {hasProfile && (
-                    <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-teal-500 border-2 border-[#050505] flex items-center justify-center">
-                      <CheckCircle size={10} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-                    {hasProfile ? (
-                      <>
-                        Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 17 ? "Afternoon" : "Evening"},{" "}
-                        <span className="bg-gradient-to-r from-blue-400 via-teal-400 to-purple-400 bg-clip-text text-transparent">
-                          {userName}
-                        </span>
-                      </>
-                    ) : (
-                      "Welcome to ProHire"
-                    )}
-                  </h1>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Your AI career dashboard — {hasProfile ? "ready to help you advance" : "get started by setting up your profile"}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white">
-                <Filter size={14} className="inline mr-2" />
-                Filter
-              </button>
-              <button className="rounded-xl bg-gradient-to-r from-blue-500 via-teal-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 hover:scale-105">
-                <Plus size={14} className="inline mr-2" />
-                New Application
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Mobile Navigation */}
+        {mobileNavOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <button
+              aria-label="Close navigation"
+              className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm"
+              onClick={() => setMobileNavOpen(false)}
+            />
 
-        {/* Agent Status Row */}
-        <div className="mt-6 flex flex-wrap gap-2 animate-in slide-in-from-bottom-5 fade-in duration-700 delay-200">
-          <AgentStatusPill label="Orchestrator" status="running" />
-          <AgentStatusPill label="Profile Agent" status={hasProfile ? "done" : "idle"} />
-          <AgentStatusPill label="Job Discovery" status={hasProfile ? "running" : "idle"} />
-          <AgentStatusPill label="Interview Agent" status="idle" />
-          <AgentStatusPill label="Career Intelligence" status="idle" />
-          <AgentStatusPill label="Application Agent" status="idle" />
-        </div>
+            <aside className="relative flex h-full w-[285px] flex-col border-r border-black/[0.06] bg-white shadow-2xl">
+              <div className="flex items-center justify-between px-6 py-5">
+                <Logo />
 
-        {/* Profile Warning */}
-        {!loading && !hasProfile && (
-          <div className="mt-6 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-amber-500/10 p-6 backdrop-blur-sm animate-in slide-in-from-top-5 fade-in duration-500">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
-                  <AlertCircle size={22} className="text-amber-400" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-white">Profile Not Set Up</h4>
-                  <p className="text-sm text-slate-400">
-                    Your profile is the foundation for all AI agents. Complete it to unlock personalized job matching, interviews, and career roadmap.
-                  </p>
-                </div>
-              </div>
-              <Link
-                href="/profile"
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 via-teal-500 to-purple-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 hover:scale-105 flex-shrink-0"
-              >
-                Set Up Profile
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Quick Stats */}
-        {hasProfile && (
-          <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4 animate-in slide-in-from-bottom-5 fade-in duration-700 delay-300">
-            {stats.map((stat, idx) => (
-              <div
-                key={idx}
-                className="group relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 p-6 backdrop-blur-sm transition-all hover:border-white/10 hover:bg-white/10 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/5"
-              >
-                <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 blur-2xl transition-all group-hover:scale-150" />
-                <div className="relative z-10">
-                  <div className={`inline-flex rounded-xl bg-gradient-to-br ${stat.color} p-2.5 text-[#050505] shadow-lg shadow-blue-500/20 transition-all group-hover:scale-110 group-hover:rotate-3`}>
-                    <stat.icon size={18} />
-                  </div>
-                  <div className="mt-4 flex items-end justify-between">
-                    <div>
-                      <div className="text-2xl font-bold text-white">{stat.value}</div>
-                      <div className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-0.5">
-                        {stat.label}
-                      </div>
-                    </div>
-                    <div className="text-xs text-teal-400 font-medium">{stat.change}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Main Grid */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-3 animate-in slide-in-from-bottom-5 fade-in duration-700 delay-400">
-          {/* Left Column - Career Journey */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Your Career Journey</h2>
-              <Link href="/journey" className="text-sm text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
-                View all <ChevronRight size={14} />
-              </Link>
-            </div>
-            
-            <div className="grid gap-4 sm:grid-cols-2">
-              {journeySteps.map((step, idx) => (
-                <div
-                  key={idx}
-                  className={`group rounded-2xl border border-white/5 bg-white/5 p-5 backdrop-blur-sm transition-all hover:border-white/10 hover:bg-white/10 hover:-translate-y-1 ${step.disabled ? "opacity-60" : ""}`}
+                <button
+                  onClick={() => setMobileNavOpen(false)}
+                  className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className={`inline-flex rounded-xl bg-gradient-to-br ${step.color} p-2.5 text-[#050505] shadow-lg shadow-blue-500/20 transition-all group-hover:scale-110 group-hover:rotate-3`}>
-                      <step.icon size={18} />
-                    </div>
-                    {step.done && (
-                      <span className="flex items-center gap-1 rounded-full bg-teal-500/10 px-2.5 py-1 text-xs text-teal-400 border border-teal-500/20">
-                        <CheckCircle size={10} />
-                        Complete
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="mt-3 font-semibold text-white">{step.title}</h3>
-                  <p className="mt-1 text-xs text-slate-400">{step.desc}</p>
-                  {step.disabled ? (
-                    <span className="mt-4 inline-block text-xs text-slate-500">Complete your profile first</span>
-                  ) : (
-                    <Link
-                      href={step.href}
-                      className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-400 transition-all group-hover:gap-2"
-                    >
-                      {step.cta}
-                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Recommended Jobs */}
-            {hasProfile && (
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-white">Top Matches For You</h3>
-                  <Link href="/jobs" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
-                    See all →
-                  </Link>
-                </div>
-                <div className="space-y-3">
-                  {recommendedJobs.map((job, idx) => (
-                    <div
-                      key={idx}
-                      className="group flex flex-col gap-3 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-white/10 hover:bg-white/10 hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="flex items-start gap-3 sm:items-center">
-                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/5">
-                          <Briefcase size={16} className="text-blue-400" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium text-white">{job.title}</h4>
-                          <p className="text-xs text-slate-400">{job.company} • {job.location}</p>
-                          <span className="text-[10px] text-slate-500">{job.type}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-16 rounded-full bg-white/5 overflow-hidden">
-                            <div className="h-full rounded-full bg-gradient-to-r from-teal-500 to-blue-500" style={{ width: `${job.match}%` }} />
-                          </div>
-                          <span className="text-xs font-semibold text-teal-400">{job.match}%</span>
-                        </div>
-                        <Link
-                          href={`/jobs/${idx}`}
-                          className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 transition-all hover:border-white/20 hover:bg-white/5 hover:text-white"
-                        >
-                          Apply
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right Column - Activity & Skills */}
-          <div className="space-y-6">
-            {/* Recent Activity */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-white">Recent Activity</h3>
-                <button className="text-xs text-slate-500 hover:text-white transition-colors">
-                  View all
+                  <X size={19} />
                 </button>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-4 backdrop-blur-sm">
-                <div className="space-y-4">
-                  {recentActivity.map((activity, idx) => (
-                    <div key={idx} className="flex items-start gap-3 transition-all hover:translate-x-1">
-                      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-                        activity.status === "success" ? "bg-teal-500/10" : "bg-blue-500/10"
-                      }`}>
-                        <activity.icon size={14} className={activity.status === "success" ? "text-teal-400" : "text-blue-400"} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-300">{activity.event}</p>
-                        <span className="text-xs text-slate-500">{activity.time}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+
+              <SidebarContent initials={initials} />
+            </aside>
+          </div>
+        )}
+
+        {/* Main */}
+        <div className="min-w-0 flex-1">
+          {/* Top bar */}
+          <header className="sticky top-0 z-30 h-[72px] border-b border-black/[0.045] bg-white/75 backdrop-blur-2xl">
+            <div className="flex h-full items-center gap-3 px-4 sm:px-6 lg:px-8">
+              <button
+                onClick={() => setMobileNavOpen(true)}
+                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+                aria-label="Open navigation"
+              >
+                <Menu size={21} />
+              </button>
+
+              {/* Mobile logo */}
+              <div className="lg:hidden">
+                <Logo />
+              </div>
+
+              {/* Search */}
+              <div className="relative hidden max-w-[520px] flex-1 md:block">
+                <Search
+                  size={17}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+
+                <input
+                  placeholder="Search jobs, skills, or ask your AI assistant..."
+                  className="h-11 w-full rounded-2xl border border-black/[0.055] bg-slate-50/80 pl-11 pr-20 text-[13px] outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:ring-4 focus:ring-slate-900/[0.025]"
+                />
+
+                <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-lg border border-black/[0.05] bg-white px-2 py-1 text-[10px] font-medium text-slate-400 shadow-sm sm:block">
+                  ⌘ K
+                </kbd>
+              </div>
+
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  aria-label="Notifications"
+                  className="relative rounded-xl p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <Bell size={18} />
+                  <span className="absolute right-2.5 top-2 h-1.5 w-1.5 rounded-full bg-rose-500 ring-2 ring-white" />
+                </button>
+
+                <div className="mx-1 hidden h-7 w-px bg-black/[0.06] sm:block" />
+
+                <button className="flex items-center gap-2 rounded-xl p-1.5 pr-2 transition hover:bg-slate-100">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-950 text-[11px] font-semibold text-white shadow-sm">
+                    {initials}
+                  </div>
+
+                  <div className="hidden text-left sm:block">
+                    <p className="max-w-[130px] truncate text-xs font-semibold text-slate-900">
+                      {profile?.fullName || "ProHire User"}
+                    </p>
+                    <p className="max-w-[130px] truncate text-[10px] text-slate-400">
+                      {profile?.preferredRole || "Career Explorer"}
+                    </p>
+                  </div>
+
+                  <ChevronDown
+                    size={14}
+                    className="hidden text-slate-400 sm:block"
+                  />
+                </button>
               </div>
             </div>
+          </header>
 
-            {/* Skills Progress */}
-            {hasProfile && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-white">Skills Overview</h3>
-                  <button className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
-                    + Add Skill
-                  </button>
+          <main className="mx-auto max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-10 xl:px-12">
+            {/* Hero */}
+            <section className="relative overflow-hidden rounded-[28px] border border-black/[0.045] bg-white shadow-[0_16px_60px_rgba(15,23,42,0.045)]">
+              {/* Decorative glow */}
+              <div className="pointer-events-none absolute -right-24 -top-32 h-[420px] w-[620px] rounded-full bg-gradient-to-br from-cyan-200/35 via-blue-100/25 to-transparent blur-3xl" />
+
+              <div className="pointer-events-none absolute bottom-[-150px] right-[15%] h-[260px] w-[500px] rounded-full bg-emerald-200/15 blur-3xl" />
+
+              {/* Abstract path */}
+              <div className="pointer-events-none absolute right-[-30px] top-0 hidden h-full w-[48%] overflow-hidden lg:block">
+                <div className="absolute right-[8%] top-[18%] h-[260px] w-[260px] rounded-full bg-blue-100/40 blur-3xl" />
+                <div className="absolute right-[18%] top-[34%] h-[180px] w-[380px] -rotate-12 rounded-[100%] border-[22px] border-cyan-100/30 blur-[1px]" />
+                <div className="absolute right-[2%] top-[53%] h-[150px] w-[420px] rotate-[-8deg] rounded-[100%] border-[18px] border-emerald-100/25" />
+              </div>
+
+              <div className="relative grid min-h-[310px] items-center lg:grid-cols-[1fr_0.7fr]">
+                <div className="px-6 py-8 sm:px-9 sm:py-10 lg:px-11 lg:py-12">
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-black/[0.05] bg-slate-50/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.1)]" />
+                    Your AI career workspace
+                  </div>
+
+                  <h1 className="max-w-[650px] text-[34px] font-semibold leading-[1.05] tracking-[-0.045em] text-slate-950 sm:text-[46px] lg:text-[54px]">
+                    Welcome back,{" "}
+                    <span className="bg-gradient-to-r from-slate-950 via-slate-700 to-slate-950 bg-clip-text text-transparent">
+                      {firstName}.
+                    </span>{" "}
+                    <span className="inline-block">👋</span>
+                  </h1>
+
+                  <p className="mt-5 max-w-[620px] text-[14px] leading-6 text-slate-500 sm:text-[15px]">
+                    Six specialized AI agents, coordinated by one intelligent
+                    orchestrator, working together to move your career forward.
+                  </p>
+
+                  <div className="mt-7 flex flex-wrap items-center gap-3">
+                    {hasProfile ? (
+                      <Link
+                        href="/jobs"
+                        className="group inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-5 text-[13px] font-semibold text-white shadow-lg shadow-slate-900/10 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-800"
+                      >
+                        Explore opportunities
+                        <ArrowRight
+                          size={15}
+                          className="transition-transform group-hover:translate-x-0.5"
+                        />
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/profile"
+                        className="group inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-5 text-[13px] font-semibold text-white shadow-lg shadow-slate-900/10 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-800"
+                      >
+                        Build your profile
+                        <ArrowRight
+                          size={15}
+                          className="transition-transform group-hover:translate-x-0.5"
+                        />
+                      </Link>
+                    )}
+
+                    <Link
+                      href="/roadmap"
+                      className="inline-flex h-11 items-center gap-2 rounded-xl border border-black/[0.07] bg-white/80 px-5 text-[13px] font-semibold text-slate-700 transition hover:border-black/10 hover:bg-white"
+                    >
+                      View roadmap
+                    </Link>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/5 p-4 backdrop-blur-sm">
-                  <div className="space-y-3">
-                    {skills.map((skill, idx) => (
-                      <div key={idx}>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-300">{skill.name}</span>
-                          <span className="text-xs text-slate-500">{skill.level}%</span>
-                        </div>
-                        <div className="mt-1 h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-blue-400 to-purple-400 transition-all duration-1000"
-                            style={{ width: `${skill.level}%` }}
-                          />
-                        </div>
-                      </div>
+
+                {/* Hero visual */}
+                <div className="relative hidden h-full min-h-[310px] lg:block">
+                  <div className="absolute right-[14%] top-[18%] flex h-[170px] w-[170px] items-center justify-center rounded-full border border-white bg-white/70 shadow-[0_20px_60px_rgba(59,130,246,0.12)] backdrop-blur-xl">
+                    <div className="flex h-[110px] w-[110px] items-center justify-center rounded-full bg-gradient-to-br from-cyan-50 to-blue-100/80">
+                      <Sparkles
+                        size={40}
+                        strokeWidth={1.5}
+                        className="text-cyan-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="absolute bottom-[22%] right-[42%] flex h-12 w-12 items-center justify-center rounded-2xl border border-white bg-white/90 shadow-xl">
+                    <Zap size={18} className="text-amber-500" />
+                  </div>
+
+                  <div className="absolute right-[8%] top-[42%] rounded-2xl border border-white bg-white/85 px-4 py-3 shadow-xl backdrop-blur-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span className="text-[11px] font-semibold text-slate-700">
+                        AI network operational
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Profile alert */}
+            {!loading && !hasProfile && !profileError && (
+              <section className="mt-5">
+                <div className="group flex flex-col gap-4 rounded-2xl border border-amber-200/60 bg-gradient-to-r from-amber-50 to-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                      <Sparkles size={18} />
+                    </div>
+
+                    <div>
+                      <p className="text-[13px] font-semibold text-slate-900">
+                        Unlock your complete ProHire workspace
+                      </p>
+                      <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                        Complete your profile so our agents can personalize
+                        jobs, interviews and your career roadmap.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/profile"
+                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    Complete profile
+                    <ArrowRight size={13} />
+                  </Link>
+                </div>
+              </section>
+            )}
+
+            {/* Error */}
+            {profileError && (
+              <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
+                We couldn't load your profile right now. Please refresh and
+                try again.
+              </div>
+            )}
+
+            {/* Agent Network */}
+            <section className="mt-9">
+              <SectionHeader
+                eyebrow="INTELLIGENCE LAYER"
+                title="AI Agent Network"
+                description="One orchestrator. Specialized agents. One coordinated career journey."
+                right={
+                  <div className="hidden items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[10px] font-semibold text-emerald-700 sm:flex">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                    All systems operational
+                  </div>
+                }
+              />
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                {AGENTS.map((agent, index) => (
+                  <AgentCard
+                    key={agent.name}
+                    agent={{
+                      ...agent,
+                      status:
+                        index === 0
+                          ? hasProfile
+                            ? "done"
+                            : "idle"
+                          : hasProfile
+                            ? "ready"
+                            : "idle",
+                    }}
+                  />
+                ))}
+              </div>
+            </section>
+
+            {/* Career Journey */}
+            <section className="mt-10">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <SectionHeader
+                  eyebrow="YOUR PROGRESS"
+                  title="Career Journey"
+                  description="Complete each stage to unlock the full power of ProHire."
+                />
+
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] font-medium text-slate-400">
+                    {hasProfile ? "1" : "0"} / 4 completed
+                  </span>
+
+                  <div className="flex gap-1">
+                    {[0, 1, 2, 3].map((step) => (
+                      <span
+                        key={step}
+                        className={`h-1.5 w-7 rounded-full ${
+                          step === 0 && hasProfile
+                            ? "bg-emerald-500"
+                            : "bg-slate-200"
+                        }`}
+                      />
                     ))}
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* Quick Actions */}
-            {hasProfile && (
-              <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-blue-500/5 via-teal-500/5 to-purple-500/5 p-4 backdrop-blur-sm">
-                <h4 className="text-xs font-semibold text-white uppercase tracking-wider mb-3">Quick Actions</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <Link
-                    href="/interviews"
-                    className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-xs text-slate-300 transition-all hover:border-white/10 hover:bg-white/10 hover:text-white"
-                  >
-                    <Mic size={12} className="text-purple-400" />
-                    Practice
-                  </Link>
-                  <Link
-                    href="/jobs"
-                    className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-xs text-slate-300 transition-all hover:border-white/10 hover:bg-white/10 hover:text-white"
-                  >
-                    <Target size={12} className="text-blue-400" />
-                    Find Jobs
-                  </Link>
-                  <Link
-                    href="/roadmap"
-                    className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-xs text-slate-300 transition-all hover:border-white/10 hover:bg-white/10 hover:text-white"
-                  >
-                    <Compass size={12} className="text-amber-400" />
-                    Roadmap
-                  </Link>
-                  <Link
-                    href="/profile"
-                    className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-xs text-slate-300 transition-all hover:border-white/10 hover:bg-white/10 hover:text-white"
-                  >
-                    <User size={12} className="text-teal-400" />
-                    Profile
-                  </Link>
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <JourneyCard
+                  number="01"
+                  icon={User}
+                  title="Profile"
+                  description="Your verified source of truth — skills, experience, projects and resume."
+                  href="/profile"
+                  cta={hasProfile ? "Edit profile" : "Set up profile"}
+                  done={hasProfile}
+                  accent="emerald"
+                />
+
+                <JourneyCard
+                  number="02"
+                  icon={Target}
+                  title="AI Job Matching"
+                  description="Explainable compatibility scores against relevant opportunities."
+                  href="/jobs"
+                  cta="View matches"
+                  disabled={!hasProfile}
+                  accent="blue"
+                />
+
+                <JourneyCard
+                  number="03"
+                  icon={Mic}
+                  title="AI Interview"
+                  description="Adaptive, role-specific mock interviews with intelligent follow-ups."
+                  href="/jobs"
+                  cta="Start from a match"
+                  disabled={!hasProfile}
+                  accent="violet"
+                />
+
+                <JourneyCard
+                  number="04"
+                  icon={TrendingUp}
+                  title="Career Roadmap"
+                  description="A sequenced skill plan built around your real career gaps."
+                  href="/roadmap"
+                  cta="View roadmap"
+                  disabled={!hasProfile}
+                  accent="cyan"
+                />
+              </div>
+            </section>
+
+            {/* Bottom CTA */}
+            <section className="relative mt-8 overflow-hidden rounded-[24px] bg-slate-950 shadow-2xl shadow-slate-900/10">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(34,211,238,0.18),transparent_35%),radial-gradient(circle_at_90%_100%,rgba(99,102,241,0.18),transparent_40%)]" />
+
+              <div className="relative flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/10">
+                    <Sparkles size={19} className="text-cyan-300" />
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300/80">
+                      Your next chapter starts here
+                    </p>
+
+                    <h2 className="mt-1 text-xl font-semibold tracking-[-0.025em] text-white sm:text-2xl">
+                      Turn your skills into opportunities.
+                    </h2>
+
+                    <p className="mt-1.5 max-w-xl text-xs leading-5 text-slate-400">
+                      Let AI find the right roles, prepare you for interviews,
+                      and build a smarter path toward your future.
+                    </p>
+                  </div>
                 </div>
+
+                <Link
+                  href={hasProfile ? "/jobs" : "/profile"}
+                  className="group inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-bold text-slate-950 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-100"
+                >
+                  {hasProfile ? "Explore jobs" : "Get started"}
+                  <ArrowRight
+                    size={14}
+                    className="transition-transform group-hover:translate-x-0.5"
+                  />
+                </Link>
               </div>
-            )}
-          </div>
+            </section>
+
+            <footer className="flex flex-col gap-2 py-7 text-[10px] text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+              <p>ProHire · AI-powered career intelligence</p>
+              <p>Built for ambitious careers.</p>
+            </footer>
+          </main>
         </div>
-
-        {/* Bottom CTA */}
-        {hasProfile && (
-          <div className="mt-8 rounded-2xl border border-white/5 bg-gradient-to-br from-blue-500/5 via-teal-500/5 to-purple-500/5 p-6 backdrop-blur-sm text-center">
-            <div className="flex flex-col items-center gap-4 md:flex-row md:justify-between md:text-left">
-              <div>
-                <h3 className="font-semibold text-white flex items-center gap-2">
-                  <Rocket size={18} className="text-blue-400" />
-                  Ready to accelerate your career?
-                </h3>
-                <p className="text-sm text-slate-400">Your AI agents are waiting to help you land your dream job</p>
-              </div>
-              <Link
-                href="/jobs"
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 via-teal-500 to-purple-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 hover:scale-105 flex-shrink-0"
-              >
-                Find Your Next Role
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </Link>
-            </div>
-          </div>
-        )}
-      </main>
-
-      <style jsx global>{`
-        @keyframes float-particle {
-          0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.3; }
-          25% { transform: translateY(-20px) translateX(10px); opacity: 0.6; }
-          50% { transform: translateY(-10px) translateX(-10px); opacity: 0.8; }
-          75% { transform: translateY(-30px) translateX(5px); opacity: 0.5; }
-        }
-        .animate-in { animation-fill-mode: both; }
-        .slide-in-from-top-10 { animation-name: slide-in-from-top; animation-duration: 0.7s; }
-        .slide-in-from-bottom-5 { animation-name: slide-in-from-bottom; animation-duration: 0.5s; }
-        @keyframes slide-in-from-top {
-          from { transform: translateY(-20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes slide-in-from-bottom {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .fade-in { animation-name: fade-in; animation-duration: 0.5s; }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .delay-200 { animation-delay: 200ms; }
-        .delay-300 { animation-delay: 300ms; }
-        .delay-400 { animation-delay: 400ms; }
-        .delay-500 { animation-delay: 500ms; }
-      `}</style>
+      </div>
     </div>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/* Sidebar                                                                    */
+/* -------------------------------------------------------------------------- */
+
+function Sidebar({ initials }: { initials: string }) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="px-5 py-5">
+        <Logo />
+      </div>
+
+      <SidebarContent initials={initials} />
+    </div>
+  );
+}
+
+function SidebarContent({ initials }: { initials: string }) {
+  const navigation = [
+    {
+      label: "Workspace",
+      items: [
+        {
+          label: "Dashboard",
+          href: "/dashboard",
+          icon: LayoutDashboard,
+          active: true,
+        },
+        {
+          label: "Profile",
+          href: "/profile",
+          icon: User,
+        },
+        {
+          label: "Jobs",
+          href: "/jobs",
+          icon: BriefcaseBusiness,
+        },
+        {
+          label: "Interview",
+          href: "/jobs",
+          icon: Mic,
+        },
+        {
+          label: "Roadmap",
+          href: "/roadmap",
+          icon: TrendingUp,
+        },
+      ],
+    },
+    {
+      label: "Intelligence",
+      items: [
+        {
+          label: "AI Agents",
+          href: "/agents",
+          icon: Sparkles,
+        },
+      ],
+    },
+  ];
+
+  return (
+    <>
+      <nav className="flex-1 px-3">
+        {navigation.map((group) => (
+          <div key={group.label} className="mb-7">
+            <p className="mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
+              {group.label}
+            </p>
+
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`group flex h-10 items-center gap-3 rounded-xl px-3 text-[12px] font-medium transition ${
+                      item.active
+                        ? "bg-slate-950/[0.055] text-slate-950"
+                        : "text-slate-500 hover:bg-slate-950/[0.035] hover:text-slate-900"
+                    }`}
+                  >
+                    <Icon
+                      size={17}
+                      strokeWidth={item.active ? 2 : 1.7}
+                      className={
+                        item.active
+                          ? "text-slate-900"
+                          : "text-slate-400 transition group-hover:text-slate-700"
+                      }
+                    />
+                    {item.label}
+
+                    {item.active && (
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-slate-950" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <div className="px-4 pb-4">
+        <div className="relative overflow-hidden rounded-2xl border border-cyan-100/80 bg-gradient-to-br from-cyan-50 via-white to-blue-50 p-4">
+          <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-200/20 blur-2xl" />
+
+          <div className="relative">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/[0.04]">
+              <Sparkles size={15} className="text-cyan-600" />
+            </div>
+
+            <p className="mt-3 text-[11px] font-bold text-slate-900">
+              Powered by AI.
+            </p>
+
+            <p className="mt-1 text-[10px] leading-4 text-slate-500">
+              Built around your goals, skills and next opportunity.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/settings"
+          className="mt-2 flex h-10 items-center gap-3 rounded-xl px-3 text-[12px] font-medium text-slate-500 transition hover:bg-slate-950/[0.035] hover:text-slate-900"
+        >
+          <Settings size={17} className="text-slate-400" />
+          Settings
+        </Link>
+
+        <div className="mt-2 flex items-center gap-3 border-t border-black/[0.045] px-2 pt-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-[10px] font-bold text-white">
+            {initials}
+          </div>
+
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-semibold text-slate-800">
+              ProHire Member
+            </p>
+            <p className="text-[9px] text-slate-400">Personal workspace</p>
+          </div>
+
+          <MoreHorizontal size={15} className="ml-auto text-slate-400" />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Logo() {
+  return (
+    <Link href="/dashboard" className="group flex items-center gap-2.5">
+      <div className="relative flex h-8 w-8 items-center justify-center">
+        <div className="absolute h-7 w-4 -translate-x-1.5 rotate-[30deg] rounded-[6px] bg-cyan-500/90 transition-transform duration-300 group-hover:-rotate-[15deg]" />
+        <div className="absolute h-7 w-4 translate-x-1.5 rotate-[30deg] rounded-[6px] bg-blue-500/90 transition-transform duration-300 group-hover:rotate-[45deg]" />
+      </div>
+
+      <span className="text-[18px] font-bold tracking-[-0.045em] text-slate-950">
+        ProHire
+      </span>
+    </Link>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Agent Card                                                                 */
+/* -------------------------------------------------------------------------- */
+
+function AgentCard({ agent }: { agent: Agent }) {
+  const Icon = agent.icon;
+
+  const statusMap = {
+    done: {
+      label: "Complete",
+      dot: "bg-emerald-500",
+      text: "text-emerald-600",
+    },
+    ready: {
+      label: "Ready",
+      dot: "bg-blue-500",
+      text: "text-blue-600",
+    },
+    idle: {
+      label: "Waiting",
+      dot: "bg-slate-300",
+      text: "text-slate-400",
+    },
+  };
+
+  const status = statusMap[agent.status];
+
+  return (
+    <div
+      className={`group relative overflow-hidden rounded-2xl border border-black/[0.055] bg-gradient-to-br ${agent.gradient} bg-white p-4 transition duration-300 hover:-translate-y-0.5 hover:border-black/[0.09] hover:shadow-[0_14px_35px_rgba(15,23,42,0.07)]`}
+    >
+      <div className="relative flex items-start justify-between">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/[0.035]">
+          <Icon size={17} className="text-slate-700" strokeWidth={1.8} />
+        </div>
+
+        <ChevronRight
+          size={15}
+          className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-500"
+        />
+      </div>
+
+      <p className="mt-3 text-[11px] font-semibold text-slate-900">
+        {agent.name}
+      </p>
+
+      <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">
+        {agent.description}
+      </p>
+
+      <div className={`mt-3 flex items-center gap-1.5 text-[9px] font-semibold ${status.text}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+        {status.label}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Journey Card                                                               */
+/* -------------------------------------------------------------------------- */
+
+function JourneyCard({
+  number,
+  icon: Icon,
+  title,
+  description,
+  href,
+  cta,
+  done,
+  disabled,
+  accent,
+}: {
+  number: string;
+  icon: ElementType;
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+  done?: boolean;
+  disabled?: boolean;
+  accent: "emerald" | "blue" | "violet" | "cyan";
+}) {
+  const accentMap = {
+    emerald: {
+      icon: "bg-emerald-50 text-emerald-600",
+      glow: "from-emerald-100/50",
+      line: "bg-emerald-400",
+    },
+    blue: {
+      icon: "bg-blue-50 text-blue-600",
+      glow: "from-blue-100/50",
+      line: "bg-blue-400",
+    },
+    violet: {
+      icon: "bg-violet-50 text-violet-600",
+      glow: "from-violet-100/50",
+      line: "bg-violet-400",
+    },
+    cyan: {
+      icon: "bg-cyan-50 text-cyan-600",
+      glow: "from-cyan-100/50",
+      line: "bg-cyan-400",
+    },
+  };
+
+  const colors = accentMap[accent];
+
+  return (
+    <div
+      className={`group relative min-h-[290px] overflow-hidden rounded-[22px] border border-black/[0.055] bg-white p-5 transition duration-300 ${
+        disabled
+          ? "opacity-[0.72]"
+          : "hover:-translate-y-1 hover:border-black/[0.09] hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
+      }`}
+    >
+      {/* Bottom decorative gradient */}
+      <div
+        className={`pointer-events-none absolute -bottom-24 -right-20 h-48 w-64 rounded-full bg-gradient-to-t ${colors.glow} to-transparent blur-2xl transition duration-500 group-hover:scale-125`}
+      />
+
+      <div className="relative flex items-center justify-between">
+        <span className="text-[10px] font-semibold tracking-[0.08em] text-slate-300">
+          {number}
+        </span>
+
+        {done ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-bold text-emerald-600">
+            <CircleCheck size={11} />
+            Complete
+          </span>
+        ) : disabled ? (
+          <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[9px] font-semibold text-slate-400">
+            Locked
+          </span>
+        ) : (
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-semibold text-blue-600">
+            Ready
+          </span>
+        )}
+      </div>
+
+      <div
+        className={`relative mt-6 flex h-12 w-12 items-center justify-center rounded-2xl ${colors.icon} shadow-sm`}
+      >
+        <Icon size={22} strokeWidth={1.8} />
+      </div>
+
+      <div className="relative mt-5">
+        <h3 className="text-[18px] font-semibold tracking-[-0.025em] text-slate-950">
+          {title}
+        </h3>
+
+        <p className="mt-2 max-w-[260px] text-[11px] leading-5 text-slate-500">
+          {description}
+        </p>
+      </div>
+
+      <div className="relative mt-5">
+        {disabled ? (
+          <span className="text-[10px] font-medium text-slate-400">
+            Complete your profile first
+          </span>
+        ) : (
+          <Link
+            href={href}
+            className="group/link inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-800"
+          >
+            <span className="border-b border-slate-300 pb-0.5 transition group-hover/link:border-slate-800">
+              {cta}
+            </span>
+
+            <ArrowRight
+              size={13}
+              className="transition-transform group-hover/link:translate-x-1"
+            />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shared Components                                                          */
+/* -------------------------------------------------------------------------- */
+
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+  right,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-w-0 items-end justify-between gap-4">
+      <div>
+        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
+          {eyebrow}
+        </p>
+
+        <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.035em] text-slate-950">
+          {title}
+        </h2>
+
+        <p className="mt-1 text-[11px] leading-5 text-slate-500">
+          {description}
+        </p>
+      </div>
+
+      {right}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Loading                                                                    */
+/* -------------------------------------------------------------------------- */
+
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#f7f9fc]">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-[248px] border-r border-black/[0.05] bg-white lg:block" />
+
+        <div className="flex-1">
+          <div className="h-[72px] border-b border-black/[0.05] bg-white" />
+
+          <main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10">
+            <div className="h-[310px] animate-pulse rounded-[28px] bg-white" />
+
+            <div className="mt-9">
+              <div className="h-8 w-56 animate-pulse rounded-lg bg-slate-200/60" />
+              <div className="mt-2 h-4 w-80 animate-pulse rounded bg-slate-200/50" />
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                {[1, 2, 3, 4, 5].map((item) => (
+                  <div
+                    key={item}
+                    className="h-[150px] animate-pulse rounded-2xl bg-white"
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-10">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {[1, 2, 3, 4].map((item) => (
+                  <div
+                    key={item}
+                    className="h-[290px] animate-pulse rounded-[22px] bg-white"
+                  />
+                ))}
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
