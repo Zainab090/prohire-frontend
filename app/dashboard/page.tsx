@@ -25,7 +25,6 @@ import {
   Settings,
   MoreHorizontal,
   LayoutDashboard,
-  Users,
   AlertCircle,
   Filter,
   Plus,
@@ -33,6 +32,10 @@ import {
   Shield,
   Clock,
   Calendar,
+  Award,
+  Brain,
+  Eye,
+  Activity,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
@@ -51,6 +54,7 @@ interface Agent {
   icon: React.ElementType;
   status: AgentStatus;
   gradient: string;
+  color: string;
 }
 
 const AGENTS: Agent[] = [
@@ -61,6 +65,7 @@ const AGENTS: Agent[] = [
     icon: User,
     status: "done",
     gradient: "from-emerald-400/20 to-teal-400/5",
+    color: "emerald",
   },
   {
     name: "Job Discovery Agent",
@@ -69,6 +74,7 @@ const AGENTS: Agent[] = [
     icon: Target,
     status: "idle",
     gradient: "from-blue-400/20 to-indigo-400/5",
+    color: "blue",
   },
   {
     name: "Application Agent",
@@ -77,6 +83,7 @@ const AGENTS: Agent[] = [
     icon: Briefcase,
     status: "idle",
     gradient: "from-violet-400/20 to-purple-400/5",
+    color: "violet",
   },
   {
     name: "Interview Agent",
@@ -85,6 +92,7 @@ const AGENTS: Agent[] = [
     icon: Mic,
     status: "idle",
     gradient: "from-orange-400/20 to-amber-400/5",
+    color: "orange",
   },
   {
     name: "Career Intelligence",
@@ -93,6 +101,7 @@ const AGENTS: Agent[] = [
     icon: TrendingUp,
     status: "idle",
     gradient: "from-cyan-400/20 to-sky-400/5",
+    color: "cyan",
   },
 ];
 
@@ -102,6 +111,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<ProfileSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -152,10 +162,10 @@ export default function DashboardPage() {
 
   // Stats Data
   const stats = [
-    { label: "Match Score", value: "94%", icon: Target, change: "+12%", color: "from-blue-400 to-teal-400" },
-    { label: "Interviews", value: "12", icon: Mic, change: "+3 this week", color: "from-purple-400 to-pink-400" },
-    { label: "Skill Progress", value: "78%", icon: BarChart3, change: "+5%", color: "from-amber-400 to-orange-400" },
-    { label: "Applications", value: "8", icon: Briefcase, change: "2 pending", color: "from-rose-400 to-pink-400" },
+    { label: "Match Score", value: "94%", icon: Target, change: "+12%", color: "from-blue-500 to-cyan-400" },
+    { label: "Interviews", value: "12", icon: Mic, change: "+3 this week", color: "from-purple-500 to-pink-400" },
+    { label: "Skill Progress", value: "78%", icon: BarChart3, change: "+5%", color: "from-amber-500 to-orange-400" },
+    { label: "Applications", value: "8", icon: Briefcase, change: "2 pending", color: "from-rose-500 to-pink-400" },
   ];
 
   // Journey Steps
@@ -168,7 +178,7 @@ export default function DashboardPage() {
       cta: hasProfile ? "Edit Profile" : "Set Up Profile",
       done: hasProfile,
       disabled: false,
-      color: "from-blue-400 to-teal-400",
+      color: "from-blue-500 to-cyan-400",
       number: "01",
     },
     {
@@ -179,7 +189,7 @@ export default function DashboardPage() {
       cta: "View Matches",
       done: false,
       disabled: !hasProfile,
-      color: "from-purple-400 to-pink-400",
+      color: "from-purple-500 to-pink-400",
       number: "02",
     },
     {
@@ -190,7 +200,7 @@ export default function DashboardPage() {
       cta: "Start Practice",
       done: false,
       disabled: !hasProfile,
-      color: "from-amber-400 to-orange-400",
+      color: "from-amber-500 to-orange-400",
       number: "03",
     },
     {
@@ -201,8 +211,50 @@ export default function DashboardPage() {
       cta: "View Roadmap",
       done: false,
       disabled: !hasProfile,
-      color: "from-rose-400 to-pink-400",
+      color: "from-rose-500 to-pink-400",
       number: "04",
+    },
+  ];
+
+  // Recent Activity
+  const recentActivity = [
+    { time: "2 min ago", event: "AI Interview completed", status: "success", icon: Mic },
+    { time: "1 hour ago", event: "New job match: Senior Developer", status: "info", icon: Target },
+    { time: "3 hours ago", event: "Profile updated", status: "success", icon: User },
+    { time: "1 day ago", event: "Career roadmap generated", status: "info", icon: TrendingUp },
+  ];
+
+  // Skills
+  const skills = [
+    { name: "React", level: 85 },
+    { name: "TypeScript", level: 78 },
+    { name: "Node.js", level: 72 },
+    { name: "Python", level: 65 },
+    { name: "AWS", level: 55 },
+  ];
+
+  // Recommended Jobs
+  const recommendedJobs = [
+    {
+      title: "Senior Software Engineer",
+      company: "TechCorp Pakistan",
+      match: 94,
+      location: "Lahore",
+      type: "Full-time",
+    },
+    {
+      title: "Full Stack Developer",
+      company: "Innovation Labs",
+      match: 87,
+      location: "Islamabad",
+      type: "Remote",
+    },
+    {
+      title: "AI/ML Engineer",
+      company: "DataScience Inc",
+      match: 82,
+      location: "Karachi",
+      type: "Hybrid",
     },
   ];
 
@@ -216,6 +268,7 @@ export default function DashboardPage() {
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-40 -top-40 h-[520px] w-[520px] rounded-full bg-cyan-300/10 blur-3xl" />
         <div className="absolute left-[30%] top-[20%] h-[400px] w-[400px] rounded-full bg-blue-300/5 blur-3xl" />
+        <div className="absolute bottom-[-20%] left-[-10%] h-[300px] w-[300px] rounded-full bg-purple-300/5 blur-3xl" />
       </div>
 
       <Navbar />
@@ -239,9 +292,9 @@ export default function DashboardPage() {
                   <>
                     Welcome back,{" "}
                     <span className="bg-gradient-to-r from-slate-950 via-slate-700 to-slate-950 bg-clip-text text-transparent">
-                      {firstName}.
-                    </span>{" "}
-                    <span className="inline-block">👋</span>
+                      {firstName}
+                    </span>
+                    <span className="inline-block ml-1">👋</span>
                   </>
                 ) : (
                   <>
@@ -309,7 +362,7 @@ export default function DashboardPage() {
 
         {/* Profile Warning */}
         {!loading && !hasProfile && !profileError && (
-          <section className="mt-5">
+          <section className="mt-5 animate-in slide-in-from-top-5 fade-in duration-500">
             <div className="group flex flex-col gap-4 rounded-2xl border border-amber-200/60 bg-gradient-to-r from-amber-50 to-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
@@ -344,7 +397,7 @@ export default function DashboardPage() {
         )}
 
         {/* Agent Status Row */}
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mt-6 flex flex-wrap gap-2 animate-in slide-in-from-bottom-5 fade-in duration-500 delay-100">
           <AgentStatusPill label="Orchestrator" status="running" />
           <AgentStatusPill label="Profile Agent" status={hasProfile ? "done" : "idle"} />
           <AgentStatusPill label="Job Discovery" status={hasProfile ? "idle" : "idle"} />
@@ -355,7 +408,7 @@ export default function DashboardPage() {
 
         {/* Quick Stats */}
         {hasProfile && (
-          <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4 animate-in slide-in-from-bottom-5 fade-in duration-500 delay-200">
             {stats.map((stat, idx) => (
               <div
                 key={idx}
@@ -382,7 +435,7 @@ export default function DashboardPage() {
         )}
 
         {/* Agent Network */}
-        <section className="mt-9">
+        <section className="mt-9 animate-in slide-in-from-bottom-5 fade-in duration-500 delay-300">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
@@ -421,48 +474,193 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Career Journey */}
-        <section className="mt-10">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                YOUR PROGRESS
-              </p>
-              <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.035em] text-slate-950">
-                Career Journey
-              </h2>
-              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                Complete each stage to unlock the full power of ProHire.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] font-medium text-slate-400">
-                {hasProfile ? "1" : "0"} / 4 completed
-              </span>
-              <div className="flex gap-1">
-                {[0, 1, 2, 3].map((step) => (
-                  <span
-                    key={step}
-                    className={`h-1.5 w-7 rounded-full ${
-                      step === 0 && hasProfile
-                        ? "bg-emerald-500"
-                        : "bg-slate-200"
-                    }`}
-                  />
-                ))}
+        {/* Main Grid */}
+        <div className="mt-10 grid gap-6 lg:grid-cols-3 animate-in slide-in-from-bottom-5 fade-in duration-500 delay-400">
+          {/* Left Column - Career Journey */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                  YOUR PROGRESS
+                </p>
+                <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.035em] text-slate-950">
+                  Career Journey
+                </h2>
+                <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                  Complete each stage to unlock the full power of ProHire.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] font-medium text-slate-400">
+                  {hasProfile ? "1" : "0"} / 4 completed
+                </span>
+                <div className="flex gap-1">
+                  {[0, 1, 2, 3].map((step) => (
+                    <span
+                      key={step}
+                      className={`h-1.5 w-7 rounded-full ${
+                        step === 0 && hasProfile
+                          ? "bg-emerald-500"
+                          : "bg-slate-200"
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {journeySteps.map((step, idx) => (
+                <JourneyCard key={idx} {...step} />
+              ))}
+            </div>
+
+            {/* Recommended Jobs */}
+            {hasProfile && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-slate-900">Top Matches For You</h3>
+                  <Link href="/jobs" className="text-xs text-blue-600 hover:text-blue-700 transition-colors">
+                    See all →
+                  </Link>
+                </div>
+                <div className="space-y-3">
+                  {recommendedJobs.map((job, idx) => (
+                    <div
+                      key={idx}
+                      className="group flex flex-col gap-3 rounded-xl border border-black/[0.055] bg-white p-4 transition hover:border-black/[0.09] hover:shadow-[0_8px_25px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="flex items-start gap-3 sm:items-center">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-black/[0.05]">
+                          <Briefcase size={16} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-900">{job.title}</h4>
+                          <p className="text-xs text-slate-500">{job.company} • {job.location}</p>
+                          <span className="text-[10px] text-slate-400">{job.type}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-16 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-500" style={{ width: `${job.match}%` }} />
+                          </div>
+                          <span className="text-xs font-semibold text-emerald-600">{job.match}%</span>
+                        </div>
+                        <Link
+                          href={`/jobs/${idx}`}
+                          className="rounded-lg border border-black/[0.06] px-3 py-1.5 text-xs text-slate-600 transition hover:border-black/[0.1] hover:bg-slate-50 hover:text-slate-900"
+                        >
+                          Apply
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {journeySteps.map((step, idx) => (
-              <JourneyCard key={idx} {...step} />
-            ))}
+          {/* Right Column - Activity & Skills */}
+          <div className="space-y-6">
+            {/* Recent Activity */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-slate-900">Recent Activity</h3>
+                <button className="text-xs text-slate-500 hover:text-slate-700 transition-colors">
+                  View all
+                </button>
+              </div>
+              <div className="rounded-2xl border border-black/[0.055] bg-white p-4">
+                <div className="space-y-4">
+                  {recentActivity.map((activity, idx) => (
+                    <div key={idx} className="flex items-start gap-3 transition hover:translate-x-0.5">
+                      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
+                        activity.status === "success" ? "bg-emerald-50" : "bg-blue-50"
+                      }`}>
+                        <activity.icon size={14} className={activity.status === "success" ? "text-emerald-600" : "text-blue-600"} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-slate-700">{activity.event}</p>
+                        <span className="text-xs text-slate-400">{activity.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Skills Progress */}
+            {hasProfile && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-slate-900">Skills Overview</h3>
+                  <button className="text-xs text-blue-600 hover:text-blue-700 transition-colors">
+                    + Add Skill
+                  </button>
+                </div>
+                <div className="rounded-2xl border border-black/[0.055] bg-white p-4">
+                  <div className="space-y-3">
+                    {skills.map((skill, idx) => (
+                      <div key={idx}>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-700">{skill.name}</span>
+                          <span className="text-xs text-slate-400">{skill.level}%</span>
+                        </div>
+                        <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-1000"
+                            style={{ width: `${skill.level}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            {hasProfile && (
+              <div className="rounded-2xl border border-black/[0.055] bg-gradient-to-br from-blue-50/50 via-cyan-50/50 to-purple-50/50 p-4">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Quick Actions</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/interviews"
+                    className="flex items-center gap-2 rounded-lg border border-black/[0.05] bg-white/70 px-3 py-2 text-xs text-slate-700 transition hover:border-black/[0.08] hover:bg-white hover:text-slate-900"
+                  >
+                    <Mic size={12} className="text-purple-500" />
+                    Practice
+                  </Link>
+                  <Link
+                    href="/jobs"
+                    className="flex items-center gap-2 rounded-lg border border-black/[0.05] bg-white/70 px-3 py-2 text-xs text-slate-700 transition hover:border-black/[0.08] hover:bg-white hover:text-slate-900"
+                  >
+                    <Target size={12} className="text-blue-500" />
+                    Find Jobs
+                  </Link>
+                  <Link
+                    href="/roadmap"
+                    className="flex items-center gap-2 rounded-lg border border-black/[0.05] bg-white/70 px-3 py-2 text-xs text-slate-700 transition hover:border-black/[0.08] hover:bg-white hover:text-slate-900"
+                  >
+                    <Compass size={12} className="text-amber-500" />
+                    Roadmap
+                  </Link>
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-2 rounded-lg border border-black/[0.05] bg-white/70 px-3 py-2 text-xs text-slate-700 transition hover:border-black/[0.08] hover:bg-white hover:text-slate-900"
+                  >
+                    <User size={12} className="text-emerald-500" />
+                    Profile
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
-        </section>
+        </div>
 
         {/* Bottom CTA */}
-        <section className="relative mt-8 overflow-hidden rounded-[24px] bg-slate-950 shadow-2xl shadow-slate-900/10">
+        <section className="relative mt-8 overflow-hidden rounded-[24px] bg-slate-950 shadow-2xl shadow-slate-900/10 animate-in slide-in-from-bottom-5 fade-in duration-500 delay-500">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(34,211,238,0.18),transparent_35%),radial-gradient(circle_at_90%_100%,rgba(99,102,241,0.18),transparent_40%)]" />
           <div className="relative flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
@@ -502,7 +700,7 @@ export default function DashboardPage() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Agent Card                                                                 */
+/* Agent Card Component */
 /* -------------------------------------------------------------------------- */
 
 function AgentCard({ agent }: { agent: Agent }) {
@@ -544,7 +742,7 @@ function AgentCard({ agent }: { agent: Agent }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Journey Card                                                               */
+/* Journey Card Component */
 /* -------------------------------------------------------------------------- */
 
 function JourneyCard({
@@ -570,15 +768,14 @@ function JourneyCard({
 }) {
   return (
     <div
-      className={`group relative min-h-[280px] overflow-hidden rounded-[22px] border border-black/[0.055] bg-white p-5 transition duration-300 ${
+      className={`group relative min-h-[260px] overflow-hidden rounded-[22px] border border-black/[0.055] bg-white p-5 transition duration-300 ${
         disabled
           ? "opacity-[0.72]"
           : "hover:-translate-y-1 hover:border-black/[0.09] hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
       }`}
     >
-      {/* Bottom decorative gradient */}
       <div
-        className={`pointer-events-none absolute -bottom-24 -right-20 h-48 w-64 rounded-full bg-gradient-to-t ${color.replace("from-", "from-").replace("to-", "to-")}/20 to-transparent blur-2xl transition duration-500 group-hover:scale-125`}
+        className={`pointer-events-none absolute -bottom-24 -right-20 h-48 w-64 rounded-full bg-gradient-to-t ${color.replace("from-", "from-").replace("to-", "to-")}/10 to-transparent blur-2xl transition duration-500 group-hover:scale-125`}
       />
 
       <div className="relative flex items-center justify-between">
@@ -593,89 +790,3 @@ function JourneyCard({
         ) : disabled ? (
           <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[9px] font-semibold text-slate-400">
             Locked
-          </span>
-        ) : (
-          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-semibold text-blue-600">
-            Ready
-          </span>
-        )}
-      </div>
-
-      <div
-        className={`relative mt-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${color} p-2.5 text-white shadow-sm`}
-      >
-        <Icon size={20} />
-      </div>
-
-      <div className="relative mt-5">
-        <h3 className="text-[18px] font-semibold tracking-[-0.025em] text-slate-950">
-          {title}
-        </h3>
-        <p className="mt-2 max-w-[260px] text-[11px] leading-5 text-slate-500">
-          {desc}
-        </p>
-      </div>
-
-      <div className="relative mt-5">
-        {disabled ? (
-          <span className="text-[10px] font-medium text-slate-400">
-            Complete your profile first
-          </span>
-        ) : (
-          <Link
-            href={href}
-            className="group/link inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-800"
-          >
-            <span className="border-b border-slate-300 pb-0.5 transition group-hover/link:border-slate-800">
-              {cta}
-            </span>
-            <ArrowRight
-              size={13}
-              className="transition-transform group-hover/link:translate-x-1"
-            />
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Loading Skeleton                                                           */
-/* -------------------------------------------------------------------------- */
-
-function DashboardSkeleton() {
-  return (
-    <div className="min-h-screen bg-[#f7f9fc]">
-      <div className="flex min-h-screen">
-        <div className="flex-1">
-          <div className="h-[72px] border-b border-black/[0.05] bg-white/75 backdrop-blur-2xl" />
-          <main className="mx-auto max-w-7xl px-4 pt-24 pb-12 sm:px-6 lg:px-8">
-            <div className="h-[280px] animate-pulse rounded-[28px] bg-white" />
-            <div className="mt-6 flex flex-wrap gap-2">
-              {[1, 2, 3, 4, 5, 6].map((item) => (
-                <div key={item} className="h-8 w-24 animate-pulse rounded-full bg-slate-200" />
-              ))}
-            </div>
-            <div className="mt-9">
-              <div className="h-8 w-56 animate-pulse rounded-lg bg-slate-200/60" />
-              <div className="mt-2 h-4 w-80 animate-pulse rounded bg-slate-200/50" />
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                {[1, 2, 3, 4, 5].map((item) => (
-                  <div key={item} className="h-[150px] animate-pulse rounded-2xl bg-white" />
-                ))}
-              </div>
-            </div>
-            <div className="mt-10">
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {[1, 2, 3, 4].map((item) => (
-                  <div key={item} className="h-[280px] animate-pulse rounded-[22px] bg-white" />
-                ))}
-              </div>
-            </div>
-          </main>
-        </div>
-      </div>
-    </div>
-  );
-}
