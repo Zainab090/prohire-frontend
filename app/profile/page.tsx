@@ -988,7 +988,7 @@ export default function ProfilePage() {
                             .value as ProfileFormState["remotePref"],
                       })
                     }
-                    className="profile-input"
+                    className="profile-input h-[46px] w-full rounded-xl border border-white/[0.09] bg-[#0a0f15]/80 px-4 text-[12px] font-medium text-slate-200 outline-none placeholder:text-slate-600 transition-all duration-200 hover:border-white/[0.14] hover:bg-[#0c1219] focus:border-cyan-400/40 focus:bg-[#0b1118] focus:ring-2 focus:ring-cyan-400/[0.08] focus:shadow-[0_0_20px_rgba(34,211,238,0.06)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
 
                     <option value="no_preference">
@@ -1075,7 +1075,7 @@ export default function ProfilePage() {
                       }
                     }}
                     placeholder="Type a skill and press Enter..."
-                    className="profile-input"
+                    className="profile-input h-[46px] w-full rounded-xl border border-white/[0.09] bg-[#0a0f15]/80 px-4 text-[12px] font-medium text-slate-200 outline-none placeholder:text-slate-600 transition-all duration-200 hover:border-white/[0.14] hover:bg-[#0c1219] focus:border-cyan-400/40 focus:bg-[#0b1118] focus:ring-2 focus:ring-cyan-400/[0.08] focus:shadow-[0_0_20px_rgba(34,211,238,0.06)] disabled:cursor-not-allowed disabled:opacity-50"
                   />
 
                   <button
@@ -1218,7 +1218,7 @@ export default function ProfilePage() {
                                 )
                               }
                               placeholder="Job title"
-                              className="profile-input"
+                              className="profile-input h-[46px] w-full rounded-xl border border-white/[0.09] bg-[#0a0f15]/80 px-4 text-[12px] font-medium text-slate-200 outline-none placeholder:text-slate-600 transition-all duration-200 hover:border-white/[0.14] hover:bg-[#0c1219] focus:border-cyan-400/40 focus:bg-[#0b1118] focus:ring-2 focus:ring-cyan-400/[0.08] focus:shadow-[0_0_20px_rgba(34,211,238,0.06)] disabled:cursor-not-allowed disabled:opacity-50"
                             />
 
                             <input
@@ -1231,7 +1231,7 @@ export default function ProfilePage() {
                                 )
                               }
                               placeholder="Company / Organization"
-                              className="profile-input"
+                              className="profile-input h-[46px] w-full rounded-xl border border-white/[0.09] bg-[#0a0f15]/80 px-4 text-[12px] font-medium text-slate-200 outline-none placeholder:text-slate-600 transition-all duration-200 hover:border-white/[0.14] hover:bg-[#0c1219] focus:border-cyan-400/40 focus:bg-[#0b1118] focus:ring-2 focus:ring-cyan-400/[0.08] focus:shadow-[0_0_20px_rgba(34,211,238,0.06)] disabled:cursor-not-allowed disabled:opacity-50"
                             />
 
                             <textarea
@@ -1247,7 +1247,7 @@ export default function ProfilePage() {
                               }
                               placeholder="Describe your responsibilities, achievements, and impact..."
                               rows={4}
-                              className="profile-textarea sm:col-span-2"
+                              className="profile-textarea w-full rounded-xl border border-white/[0.09] bg-[#0a0f15]/80 px-4 py-3 text-[12px] font-medium leading-5 text-slate-200 outline-none placeholder:text-slate-600 transition-all duration-200 resize-y hover:border-white/[0.14] hover:bg-[#0c1219] focus:border-cyan-400/40 focus:bg-[#0b1118] focus:ring-2 focus:ring-cyan-400/[0.08] focus:shadow-[0_0_20px_rgba(34,211,238,0.06)] disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2"
                             />
 
                           </div>
@@ -1362,7 +1362,7 @@ export default function ProfilePage() {
                                 )
                               }
                               placeholder="Project name"
-                              className="profile-input"
+                              className="profile-input h-[46px] w-full rounded-xl border border-white/[0.09] bg-[#0a0f15]/80 px-4 text-[12px] font-medium text-slate-200 outline-none placeholder:text-slate-600 transition-all duration-200 hover:border-white/[0.14] hover:bg-[#0c1219] focus:border-cyan-400/40 focus:bg-[#0b1118] focus:ring-2 focus:ring-cyan-400/[0.08] focus:shadow-[0_0_20px_rgba(34,211,238,0.06)] disabled:cursor-not-allowed disabled:opacity-50"
                             />
 
                             <textarea
@@ -1376,7 +1376,7 @@ export default function ProfilePage() {
                               }
                               placeholder="What did you build? What problem did it solve? What was your contribution?"
                               rows={4}
-                              className="profile-textarea"
+                              className="profile-textarea w-full rounded-xl border border-white/[0.09] bg-[#0a0f15]/80 px-4 py-3 text-[12px] font-medium leading-5 text-slate-200 outline-none placeholder:text-slate-600 transition-all duration-200 resize-y hover:border-white/[0.14] hover:bg-[#0c1219] focus:border-cyan-400/40 focus:bg-[#0b1118] focus:ring-2 focus:ring-cyan-400/[0.08] focus:shadow-[0_0_20px_rgba(34,211,238,0.06)] disabled:cursor-not-allowed disabled:opacity-50"
                             />
 
                             <div>
@@ -1400,7 +1400,7 @@ export default function ProfilePage() {
                                   )
                                 }
                                 placeholder="React, Next.js, Python, PostgreSQL..."
-                                className="profile-input"
+                                className="profile-input h-[46px] w-full rounded-xl border border-white/[0.09] bg-[#0a0f15]/80 px-4 text-[12px] font-medium text-slate-200 outline-none placeholder:text-slate-600 transition-all duration-200 hover:border-white/[0.14] hover:bg-[#0c1219] focus:border-cyan-400/40 focus:bg-[#0b1118] focus:ring-2 focus:ring-cyan-400/[0.08] focus:shadow-[0_0_20px_rgba(34,211,238,0.06)] disabled:cursor-not-allowed disabled:opacity-50"
                               />
 
                               <p className="mt-1.5 text-[9px] text-slate-700">
@@ -1610,6 +1610,50 @@ export default function ProfilePage() {
 
         </div>
 
+        
+        <style jsx global>{`
+          .profile-input,
+          .profile-textarea {
+            -webkit-appearance: none;
+            appearance: none;
+            -webkit-tap-highlight-color: transparent;
+          }
+        
+          .profile-input::placeholder,
+          .profile-textarea::placeholder {
+            opacity: 1;
+          }
+        
+          .profile-input:-webkit-autofill,
+          .profile-input:-webkit-autofill:hover,
+          .profile-input:-webkit-autofill:focus,
+          .profile-textarea:-webkit-autofill,
+          .profile-textarea:-webkit-autofill:hover,
+          .profile-textarea:-webkit-autofill:focus {
+            -webkit-text-fill-color: rgb(226 232 240);
+            -webkit-box-shadow: 0 0 0 1000px #0a0f15 inset;
+            transition: background-color 9999s ease-in-out 0s;
+          }
+        
+          select.profile-input {
+            cursor: pointer;
+          }
+        
+          input[type="number"].profile-input::-webkit-inner-spin-button,
+          input[type="number"].profile-input::-webkit-outer-spin-button {
+            opacity: 0.35;
+          }
+        
+          .profile-textarea {
+            min-height: 112px;
+          }
+        
+          .profile-input:focus-visible,
+          .profile-textarea:focus-visible {
+            outline: none;
+          }
+        `}</style>
+        
       </main>
     </div>
   );
@@ -1757,7 +1801,7 @@ function Field({
           onChange(e.target.value)
         }
         placeholder={placeholder}
-        className="profile-input"
+        className="profile-input h-[46px] w-full rounded-xl border border-white/[0.09] bg-[#0a0f15]/80 px-4 text-[12px] font-medium text-slate-200 outline-none placeholder:text-slate-600 transition-all duration-200 hover:border-white/[0.14] hover:bg-[#0c1219] focus:border-cyan-400/40 focus:bg-[#0b1118] focus:ring-2 focus:ring-cyan-400/[0.08] focus:shadow-[0_0_20px_rgba(34,211,238,0.06)] disabled:cursor-not-allowed disabled:opacity-50"
       />
 
     </div>
@@ -1808,7 +1852,7 @@ function LinkField({
             onChange(e.target.value)
           }
           placeholder={placeholder}
-          className="profile-input pl-9"
+          className="profile-input h-[46px] w-full rounded-xl border border-white/[0.09] bg-[#0a0f15]/80 px-4 text-[12px] font-medium text-slate-200 outline-none placeholder:text-slate-600 transition-all duration-200 hover:border-white/[0.14] hover:bg-[#0c1219] focus:border-cyan-400/40 focus:bg-[#0b1118] focus:ring-2 focus:ring-cyan-400/[0.08] focus:shadow-[0_0_20px_rgba(34,211,238,0.06)] disabled:cursor-not-allowed disabled:opacity-50 pl-9"
         />
 
       </div>
